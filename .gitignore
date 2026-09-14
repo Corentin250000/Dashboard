@@ -1,0 +1,6 @@
+.*
+!.gitignore
+!.gitkeep
+tests_back/
+*.pdf
+.env
