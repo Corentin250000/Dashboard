@@ -1,6 +1,7 @@
 .*
 !.gitignore
 !.gitkeep
-tests_back/
+!.env.example
 *.pdf
 .env
+doppler.yaml
