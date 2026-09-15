@@ -28,27 +28,34 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # client:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   image: dashboard-client:local
-  #   container_name: dashboard-client
-  #   ports:
-  #     - "8081:80"
-  #   environment:
-  #     API_URL: ${API_URL:-http://localhost:8080}
-  #   depends_on:
-  #     - server
-  #   restart: unless-stopped
+  client:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+    image: dashboard-client:local
+    container_name: dashboard-client
+    ports:
+      - "8081:8081"
+    depends_on:
+      - server
+    restart: unless-stopped
 
   db:
-    image: postgres:16-alpine
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    image: dashboard-db:local
     container_name: dashboard-db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DOPPLER_TOKEN: ${DOPPLER_TOKEN:-}
+      POSTGRES_DB: ${POSTGRES_DB:-}
+      POSTGRES_USER: ${POSTGRES_USER:-}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

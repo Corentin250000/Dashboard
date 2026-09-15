@@ -2,7 +2,6 @@
 !.gitignore
 !.gitkeep
 !.env.example
-tests_back/
 *.pdf
 .env
 doppler.yaml
