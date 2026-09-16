@@ -1,104 +1,84 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"dashboard-backend/internal/about"
+	"dashboard-backend/internal/utils"
+
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/logger"
+	"github.com/gofiber/fiber/v3/middleware/recover"
+	"github.com/gofiber/fiber/v3/middleware/requestid"
 )
 
 func main() {
-	port := envOr("PORT", "8080")
+	port := utils.GetEnv("PORT", "8080")
 	addr := ":" + port
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /about.json", handleAbout)
-	mux.HandleFunc("GET /health", handleHealth)
-	mux.HandleFunc("GET /", handleRoot)
-
-	handler := withCORS(withLogging(mux))
-
-	srv := &http.Server{
-		Addr:         addr,
-		Handler:      handler,
+	app := fiber.New(fiber.Config{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
-	}
+	})
+
+	app.Use(requestid.New())
+	app.Use(logger.New(logger.Config{
+		Format: "${time} ${respHeader:X-Request-Id} ${status} ${method} ${path} ${latency}\n",
+	}))
+	app.Use(recover.New())
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Content-Type", "Authorization"},
+	}))
+
+	// GET routes also answer HEAD (proper HTTP semantics; the Docker
+	// healthcheck probes /health with `wget --spider`, i.e. HEAD).
+	getHead := []string{fiber.MethodGet, fiber.MethodHead}
+	app.Add(getHead, "/about.json", handleAbout)
+	app.Add(getHead, "/health", handleHealth)
+	app.Add(getHead, "/", handleRoot)
+	app.Use(func(c fiber.Ctx) error {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
+	})
 
 	go func() {
 		log.Printf("server listening on %s", addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %v", err)
+		if err := app.Listen(addr); err != nil {
+			log.Printf("listen: %v", err)
 		}
 	}()
 
+	// Graceful shutdown on SIGINT/SIGTERM (docker stop).
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := app.ShutdownWithTimeout(10 * time.Second); err != nil {
 		log.Printf("shutdown error: %v", err)
 	}
 	log.Println("server stopped")
 }
 
-func handleAbout(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, about.Build(r))
+func handleAbout(c fiber.Ctx) error {
+	host := about.ClientIP(
+		c.Get(fiber.HeaderXForwardedFor),
+		c.Get("X-Real-IP"),
+		c.IP(),
+	)
+	return c.JSON(about.Build(host))
 }
 
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+func handleHealth(c fiber.Ctx) error {
+	return c.JSON(fiber.Map{"status": "ok"})
 }
 
-func handleRoot(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]string{
-		"message": "dashboard API — see GET /about.json",
-	})
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
-
-func withLogging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		next.ServeHTTP(w, r)
-		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
-	})
-}
-
-func withCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func envOr(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
+func handleRoot(c fiber.Ctx) error {
+	return c.JSON(fiber.Map{"message": "dashboard API — see GET /about.json"})
 }
