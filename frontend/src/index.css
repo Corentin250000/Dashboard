@@ -1,3 +1,10 @@
 :root {
-  
+  --background: #FFFFFF;
+  --card: #f8fafc;
+  --border: #E2E5EA;
+  --text-primary: #1A1F2B;
+  --text-secondary: #6B7280;
+  --accent: #3b82f6;
+  --accent-secondary: #D9502F;
 }
+
