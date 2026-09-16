@@ -60,7 +60,7 @@ docker-compose build
 docker-compose up
 ```
 
-Backend only (without Docker, Go ≥ 1.22):
+Backend only (without Docker, Go ≥ 1.25):
 
 ```bash
 cd backend && go vet ./... && go run ./cmd/server
