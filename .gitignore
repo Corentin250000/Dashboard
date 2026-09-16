@@ -2,6 +2,8 @@
 !.gitignore
 !.gitkeep
 !.env.example
+!.dockerignore
 *.pdf
 .env
 doppler.yaml
+*.txt

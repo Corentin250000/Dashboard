@@ -1,9 +1,9 @@
 package about
 
 import (
-	"net"
-	"net/http"
 	"time"
+
+	"dashboard-backend/internal/utils"
 )
 
 type Param struct {
@@ -37,45 +37,24 @@ func Registry() []Service {
 	return []Service{}
 }
 
-// Build builds the full /about.json payload for the incoming request.
-func Build(r *http.Request) Response {
+// Build builds the full /about.json payload.
+// clientHost must be resolved by the caller (proxy-aware), e.g. via ClientIP.
+func Build(clientHost string) Response {
 	var out Response
-	out.Client.Host = ClientIP(r)
+	out.Client.Host = clientHost
 	out.Server.CurrentTime = time.Now().Unix()
 	out.Server.Services = Registry()
 	return out
 }
 
-// ClientIP resolves the caller IP, proxy-aware.
-// Priority: X-Forwarded-For (first entry) > X-Real-IP > RemoteAddr.
-func ClientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Format: "client, proxy1, proxy2"
-		for i := 0; i < len(xff); i++ {
-			if xff[i] == ',' {
-				return trimSpace(xff[:i])
-			}
-		}
-		return trimSpace(xff)
+// ClientIP resolves the caller IP from raw request parts, proxy-aware.
+// Priority: X-Forwarded-For (first entry) > X-Real-IP > remoteAddr.
+func ClientIP(xForwardedFor, xRealIP, remoteAddr string) string {
+	if xForwardedFor != "" {
+		return utils.FirstCSV(xForwardedFor)
 	}
-	if xrip := r.Header.Get("X-Real-IP"); xrip != "" {
-		return trimSpace(xrip)
+	if xRealIP != "" {
+		return utils.TrimSpace(xRealIP)
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
-}
-
-func trimSpace(s string) string {
-	start := 0
-	for start < len(s) && (s[start] == ' ' || s[start] == '\t') {
-		start++
-	}
-	end := len(s)
-	for end > start && (s[end-1] == ' ' || s[end-1] == '\t') {
-		end--
-	}
-	return s[start:end]
+	return remoteAddr
 }
