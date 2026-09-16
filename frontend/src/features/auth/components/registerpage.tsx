@@ -5,11 +5,11 @@ interface RegisterPageProps {
 }
 
 function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = () => {
-    console.log({ username, password });
+    console.log({ email, password });
   };
 
   return (
@@ -18,13 +18,13 @@ function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
         <h1 className='auth-title'>Create an account</h1>
 
         <div className="auth-field">
-          <label htmlFor="username">Username</label>
+          <label htmlFor="email">Email</label>
           <input
-            id="username"
+            id="email"
             type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Your username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Your email"
           />
         </div>
 
