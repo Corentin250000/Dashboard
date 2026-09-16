@@ -3,7 +3,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
   padding: 24px;
 }
 
@@ -36,7 +35,6 @@
 }
 
 .auth-field input {
-  background: var(--background);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './App.css'
-import LoginPage from './features/auth/components/loginpage.jsx'
-import RegisterPage from './features/auth/components/registerpage.jsx'
+import LoginPage from './features/auth/components/loginpage'
+import RegisterPage from './features/auth/components/registerpage'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login');

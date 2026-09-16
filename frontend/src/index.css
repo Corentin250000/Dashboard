@@ -1,10 +1,12 @@
 :root {
-  --background: #FFFFFF;
-  --card: #f8fafc;
-  --border: #E2E5EA;
+  --background: #f5f5f4;
+  --card: #ffffff;
+  --border: #e2e2df;
   --text-primary: #1A1F2B;
   --text-secondary: #6B7280;
   --accent: #3b82f6;
   --accent-secondary: #D9502F;
 }
-
+ckground: #f5f5f4;
+  --card: #ffffff;
+  --border: #e2e2df;

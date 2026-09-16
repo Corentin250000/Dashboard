@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import '../auth.css';
 
-function LoginPage({ onSwitchToRegister }) {
+interface LoginPageProps {
+  onSwitchToRegister: () => void;
+}
+
+function LoginPage({ onSwitchToRegister }: LoginPageProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
