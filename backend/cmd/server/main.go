@@ -38,8 +38,6 @@ func main() {
 		AllowHeaders: []string{"Content-Type", "Authorization"},
 	}))
 
-	// GET routes also answer HEAD (proper HTTP semantics; the Docker
-	// healthcheck probes /health with `wget --spider`, i.e. HEAD).
 	getHead := []string{fiber.MethodGet, fiber.MethodHead}
 	app.Add(getHead, "/about.json", handleAbout)
 	app.Add(getHead, "/health", handleHealth)
@@ -55,7 +53,6 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown on SIGINT/SIGTERM (docker stop).
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
