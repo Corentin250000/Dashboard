@@ -1,0 +1,79 @@
+package auth
+
+import (
+	"errors"
+	"time"
+
+	"dashboard-backend/internal/models"
+
+	"github.com/gofiber/fiber/v3"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+type RegisterRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
+func Register(c fiber.Ctx) error {
+	var req RegisterRequest
+
+	if err := c.Bind().Body(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid request body",
+		})
+	}
+
+	if err := validate.Struct(req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid fields",
+		})
+	}
+
+	var existing models.User
+	if err := db.Where("email = ?", req.Email).First(&existing).Error; err == nil {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"message": "This email is already in use",
+		})
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Server error",
+		})
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Server error",
+		})
+	}
+
+	token, err := generateSecureToken()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Server error",
+		})
+	}
+
+	hashStr := string(hash)
+	user := models.User{
+		Email:               req.Email,
+		PasswordHash:        &hashStr,
+		IsConfirmed:         false,
+		ConfirmationToken:   &token,
+		ConfirmationExpires: ptrTime(time.Now().Add(24 * time.Hour)),
+	}
+
+	if err := db.Create(&user).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Unable to create account",
+		})
+	}
+
+	go sendConfirmationEmail(user.Email, token)
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "Account created, please check your email",
+	})
+}
