@@ -1,14 +1,13 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import '../auth.css';
 
-interface LoginPageProps {
-  onSwitchToRegister: () => void;
-}
 
-function LoginPage({ onSwitchToRegister }: LoginPageProps) {
+function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = () => {
     setErrorMessage('');
@@ -28,6 +27,10 @@ function LoginPage({ onSwitchToRegister }: LoginPageProps) {
         throw new Error('Error ' + response.status);
       }
       return response.json();
+    })
+    .then(data => {
+      localStorage.setItem('token', data.token);
+      navigate('/dashboard');
     })
     .catch(error => {
       console.log('Connection error:', error);
@@ -72,7 +75,7 @@ function LoginPage({ onSwitchToRegister }: LoginPageProps) {
 
         <p className="auth-switch">
           Don't have an account ?{' '}
-          <button onClick={onSwitchToRegister}>Create one</button>
+          <Link to="/register">Sign up</Link>
         </p>
       </div>
     </div>

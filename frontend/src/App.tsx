@@ -1,28 +1,23 @@
-import { useState } from 'react';
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/components/loginpage'
 import RegisterPage from './features/auth/components/registerpage'
+import './App.css'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('login');
-
-  const onSwitchToRegister = () => {
-    setCurrentPage('register');
-  };
-
-  const onSwitchToLogin = () => {
-    setCurrentPage('login');
-  };
-
   return (
-    <div>
-      {currentPage === 'login' ? (
-        <LoginPage onSwitchToRegister={onSwitchToRegister} />
-      ) : (
-        <RegisterPage onSwitchToLogin={onSwitchToLogin} />
-      )}
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/subscription" element={<Subscription />} />
+        <Route path="/pending-verification" element={<PendingVerification />} />
+        <Route path="/confirm-authentication" element={<ConfirmAuthentication />} />
+        <Route path="/link-unavailable" element={<LinkUnavailable />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App
