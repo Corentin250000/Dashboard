@@ -1,16 +1,41 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import '../auth.css';
 
-interface LoginPageProps {
-  onSwitchToRegister: () => void;
-}
 
-function LoginPage({ onSwitchToRegister }: LoginPageProps) {
+function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = () => {
-    console.log({ email, password });
+    setErrorMessage('');
+
+    if (!email || !password) {
+      setErrorMessage('Please fill in all fields');
+      return;
+    }
+
+    fetch("auth/login",{
+      method: 'POST',
+      headers: {'Content-type': 'application/json'},
+      body: JSON.stringify({email, password})
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error ' + response.status);
+      }
+      return response.json();
+    })
+    .then(data => {
+      localStorage.setItem('token', data.token);
+      navigate('/dashboard');
+    })
+    .catch(error => {
+      console.log('Connection error:', error);
+      setErrorMessage(error);
+    });
   };
 
   return (
@@ -44,9 +69,13 @@ function LoginPage({ onSwitchToRegister }: LoginPageProps) {
           Log in
         </button>
 
+        {errorMessage && (
+          <p className="auth-error">{errorMessage}</p>
+        )}
+
         <p className="auth-switch">
           Don't have an account ?{' '}
-          <button onClick={onSwitchToRegister}>Create one</button>
+          <Link to="/register">Sign up</Link>
         </p>
       </div>
     </div>

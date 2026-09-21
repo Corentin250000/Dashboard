@@ -73,11 +73,16 @@
   margin: 20px 0 0;
 }
 
-.auth-switch button {
+.auth-switch link {
   background: none;
   border: none;
   color: var(--accent-secondary);
-  font-size: 14px;
   cursor: pointer;
   padding: 0;
+}
+
+.auth-error {
+  color: coral;
+  font-size: 15px;
+  font-weight: 500;
 }
