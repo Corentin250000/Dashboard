@@ -15,6 +15,11 @@ type LoginRequest struct {
 }
 
 func Login(c fiber.Ctx) error {
+	if db == nil {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+			"message": "Database not configured, try again later",
+		})
+	}
 	var req LoginRequest
 
 	if err := c.Bind().Body(&req); err != nil {

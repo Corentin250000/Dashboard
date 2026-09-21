@@ -17,6 +17,11 @@ type RegisterRequest struct {
 }
 
 func Register(c fiber.Ctx) error {
+	if db == nil {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+			"message": "Database not configured, try again later",
+		})
+	}
 	var req RegisterRequest
 
 	if err := c.Bind().Body(&req); err != nil {

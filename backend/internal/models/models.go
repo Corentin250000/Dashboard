@@ -7,14 +7,14 @@ import (
 )
 
 /*
-  This file mirrors db/migrations/001_init_schema.sql.  
-  The SQL file is the source of truth (CHECK constraints, indexes, triggers);  
+  This file mirrors db/migrations/001_init_schema.sql.
+  The SQL file is the source of truth (CHECK constraints, indexes, triggers);
   the tags below keep GORM's AutoMigrate output compatible with it.
 */
 
 /*
-  User is a platform account. password_hash is NULL for OAuth-only users.
-  Confirmation gate: login is blocked while IsConfirmed is false.
+User is a platform account. password_hash is NULL for OAuth-only users.
+Confirmation gate: login is blocked while IsConfirmed is false.
 */
 type User struct {
 	ID                  uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
@@ -22,7 +22,7 @@ type User struct {
 	PasswordHash        *string    `gorm:"size:255"`
 	IsConfirmed         bool       `gorm:"not null;default:false"`
 	ConfirmationToken   *string    `gorm:"size:255;uniqueIndex"`
-	ConfirmationExpires *time.Time `gorm:"type:timestamptz"`
+	ConfirmationExpires *time.Time `gorm:"column:confirmation_expires_at;type:timestamptz"`
 	CreatedAt           time.Time  `gorm:"type:timestamptz;not null;default:now()"`
 	UpdatedAt           time.Time  `gorm:"type:timestamptz;not null;default:now()"`
 }
@@ -30,9 +30,9 @@ type User struct {
 func (User) TableName() string { return "users" }
 
 /*
-  Service is one row of the static service catalog (weather, github, rss...).
-  AuthType drives which user_services columns get filled:
-  "none" | "api_key" | "credentials" | "oauth2".
+Service is one row of the static service catalog (weather, github, rss...).
+AuthType drives which user_services columns get filled:
+"none" | "api_key" | "credentials" | "oauth2".
 */
 type Service struct {
 	ID                uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
@@ -50,9 +50,9 @@ type Service struct {
 func (Service) TableName() string { return "services" }
 
 /*
-  UserService links a user to a service they subscribed to.
-  *_enc columns hold ciphertext produced by the Go backend BEFORE insert
-  (application-side encryption — never plaintext, never decrypted by SQL).
+UserService links a user to a service they subscribed to.
+*_enc columns hold ciphertext produced by the Go backend BEFORE insert
+(application-side encryption — never plaintext, never decrypted by SQL).
 */
 type UserService struct {
 	ID                   uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
@@ -71,9 +71,9 @@ type UserService struct {
 func (UserService) TableName() string { return "user_services" }
 
 /*
-  Widget is one entry of the per-service widget catalog.
-  Declared params live in WidgetParam; valid types: "integer", "string"
-  (must match the /about.json contract).
+Widget is one entry of the per-service widget catalog.
+Declared params live in WidgetParam; valid types: "integer", "string"
+(must match the /about.json contract).
 */
 type Widget struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
@@ -92,7 +92,7 @@ type WidgetParam struct {
 	WidgetID     uuid.UUID `gorm:"type:uuid;not null;index;uniqueIndex:uq_widget_params_widget_name"`
 	Widget       Widget    `gorm:"foreignKey:WidgetID;constraint:OnDelete:CASCADE"`
 	Name         string    `gorm:"size:64;not null;uniqueIndex:uq_widget_params_widget_name"`
-	Type         string    `gorm:"size:16;not null;check:param_type in ('integer','string')"`
+	Type         string    `gorm:"size:16;not null;check:type in ('integer','string')"`
 	IsRequired   bool      `gorm:"not null;default:false"`
 	DefaultValue *string   `gorm:"type:text"`
 }
@@ -100,8 +100,8 @@ type WidgetParam struct {
 func (WidgetParam) TableName() string { return "widget_params" }
 
 /*
-  WidgetInstance is a configured widget placed on a user's dashboard.
-  Config holds this instance's param values; CachedData the last fetch result.
+WidgetInstance is a configured widget placed on a user's dashboard.
+Config holds this instance's param values; CachedData the last fetch result.
 */
 type WidgetInstance struct {
 	ID                 uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
