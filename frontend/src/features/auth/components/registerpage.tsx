@@ -1,13 +1,12 @@
 import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import '../auth.css';
 
-interface RegisterPageProps {
-  onSwitchToLogin: () => void;
-}
-
-function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
+function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = () => {
     setErrorMessage('');
@@ -25,7 +24,11 @@ function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
       if (!response.ok) {
         throw new Error('Error ' + response.status);
       }
-      return response.json;
+      return response.json();
+    })
+    .then(data => {
+      localStorage.setItem('token', data.token);
+      navigate('/login');
     })
     .catch(error => {
       console.log('Connection error:', error);
@@ -67,7 +70,7 @@ function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
 
         <p className="auth-switch">
           Already have an account ?{' '}
-          <button onClick={onSwitchToLogin}>Log in</button>
+          <Link to='/login'> log in </Link>
         </p>
       </div>
     </div>
