@@ -81,3 +81,9 @@
   cursor: pointer;
   padding: 0;
 }
+
+.auth-error {
+  color: coral;
+  font-size: 15px;
+  font-weight: 500;
+}

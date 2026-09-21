@@ -7,9 +7,30 @@ interface RegisterPageProps {
 function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = () => {
-    console.log({ email, password });
+    setErrorMessage('');
+    if (!email || !password){
+      setErrorMessage('Please fill in all fields');
+      return;
+    }
+
+    fetch("auth/register", {
+      method: 'POST',
+      headers: {'Content-type': 'application/json'},
+      body: JSON.stringify({email, password})
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error ' + response.status);
+      }
+      return response.json;
+    })
+    .catch(error => {
+      console.log('Connection error:', error);
+      setErrorMessage(error);
+    });
   };
 
   return (
@@ -39,6 +60,11 @@ function RegisterPage({ onSwitchToLogin }: RegisterPageProps) {
           />
         </div>
         <button className='auth-submit' onClick={handleSubmit}>Sign up</button>
+        
+        {errorMessage && (
+          <p className="auth-error">{errorMessage} </p>
+        )}
+
         <p className="auth-switch">
           Already have an account ?{' '}
           <button onClick={onSwitchToLogin}>Log in</button>

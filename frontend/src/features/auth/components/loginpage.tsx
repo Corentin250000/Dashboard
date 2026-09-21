@@ -8,9 +8,31 @@ interface LoginPageProps {
 function LoginPage({ onSwitchToRegister }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = () => {
-    console.log({ email, password });
+    setErrorMessage('');
+
+    if (!email || !password) {
+      setErrorMessage('Please fill in all fields');
+      return;
+    }
+
+    fetch("auth/login",{
+      method: 'POST',
+      headers: {'Content-type': 'application/json'},
+      body: JSON.stringify({email, password})
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error ' + response.status);
+      }
+      return response.json();
+    })
+    .catch(error => {
+      console.log('Connection error:', error);
+      setErrorMessage(error);
+    });
   };
 
   return (
@@ -43,6 +65,10 @@ function LoginPage({ onSwitchToRegister }: LoginPageProps) {
         <button className="auth-submit" onClick={handleSubmit}>
           Log in
         </button>
+
+        {errorMessage && (
+          <p className="auth-error">{errorMessage}</p>
+        )}
 
         <p className="auth-switch">
           Don't have an account ?{' '}
