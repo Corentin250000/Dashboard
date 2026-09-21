@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	mailjet "github.com/mailjet/mailjet-apiv3-go/v4"
+	"github.com/mailjet/mailjet-apiv3-go/v4"
 	"gorm.io/gorm"
 )
 
