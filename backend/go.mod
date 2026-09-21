@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.4
 	github.com/gofiber/fiber/v3 v3.5.0
 	github.com/google/uuid v1.6.0
-	github.com/resend/resend-go/v4 v4.6.0
+	github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
 	golang.org/x/crypto v0.55.0
 	gorm.io/driver/postgres v1.6.3
 	gorm.io/gorm v1.31.2

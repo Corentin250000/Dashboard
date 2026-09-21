@@ -51,6 +51,13 @@ Stop with `Ctrl+C` (or `docker-compose down`). To reset the database as well:
 variables in `.env` instead. Same launch command either way. Details:
 [`docs/doppler.md`](docs/doppler.md).
 
+### Mailjet email configuration
+
+Create a Mailjet account, validate one sender email through **Account > Sender addresses**
+(a custom domain and DNS verification are not required), then get the API key and secret
+key from **Account Settings > API Key Management**. Configure `API_KEY_MAILJET`,
+`SECRET_KEY_MAILJET` and `MAIL_SENDER_ACCOUNT` in Doppler or `.env`.
+
 ## Install and build
 
 ```bash
