@@ -9,7 +9,7 @@
 .auth-card {
   width: 100%;
   max-width: 360px;
-  background: var(--background);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 32px;
@@ -29,7 +29,7 @@
   margin-bottom: 16px;
 }
 
-.auth-field label {
+.auth-field label, p {
   color: var(--text-secondary);
   font-size: 13px;
 }

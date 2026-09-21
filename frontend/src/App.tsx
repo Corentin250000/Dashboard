@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/components/loginpage'
 import RegisterPage from './features/auth/components/registerpage'
+import PendingVerification from './features/auth/components/pendingverificationpage'
 import './App.css'
 
 function App() {
@@ -10,11 +11,11 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/subscription" element={<Subscription />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
+        {/* <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/subscription" element={<Subscription />} />
         <Route path="/confirm-authentication" element={<ConfirmAuthentication />} />
-        <Route path="/link-unavailable" element={<LinkUnavailable />} />
+        <Route path="/link-unavailable" element={<LinkUnavailable />} /> */}
       </Routes>
     </BrowserRouter>
   );
