@@ -28,7 +28,7 @@ function RegisterPage() {
     })
     .then(data => {
       localStorage.setItem('token', data.token);
-      navigate('/login');
+      navigate('/pending-verification');
     })
     .catch(error => {
       console.log('Connection error:', error);
