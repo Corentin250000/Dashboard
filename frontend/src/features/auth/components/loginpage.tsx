@@ -17,25 +17,24 @@ function LoginPage() {
       return;
     }
 
-    fetch("auth/login",{
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    fetch(`${apiUrl}/auth/login`, {
       method: 'POST',
-      headers: {'Content-type': 'application/json'},
-      body: JSON.stringify({email, password})
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Error ' + response.status);
-      }
-      return response.json();
-    })
-    .then(data => {
-      localStorage.setItem('token', data.token);
-      navigate('/dashboard');
-    })
-    .catch(error => {
-      console.log('Connection error:', error);
-      setErrorMessage(error);
-    });
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || `Error ${response.status}`);
+        }
+        navigate('/dashboard');
+      })
+      .catch(error => {
+        console.log('Connection error:', error);
+        setErrorMessage(error instanceof Error ? error.message : 'Connection error');
+      });
   };
 
   return (
