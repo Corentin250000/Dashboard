@@ -71,7 +71,7 @@ func Login(c fiber.Ctx) error {
 		Name:     "session_id",
 		Value:    sessionID,
 		HTTPOnly: true,
-		Secure:   true, // à mettre à false en dev local sans HTTPS
+		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 	})
