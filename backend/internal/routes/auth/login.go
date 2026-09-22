@@ -17,19 +17,22 @@ type LoginRequest struct {
 func Login(c fiber.Ctx) error {
 	if db == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-			"message": "Database not configured, try again later",
+			"status":  "error",
+			"message": "database not configured",
 		})
 	}
 	var req LoginRequest
 
 	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status":  "error",
 			"message": "Invalid request body",
 		})
 	}
 
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"status":  "error",
 			"message": "Invalid fields",
 		})
 	}
@@ -37,6 +40,7 @@ func Login(c fiber.Ctx) error {
 	var user models.User
 	if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  "error",
 			"message": "Invalid credentials",
 		})
 	}
@@ -44,18 +48,21 @@ func Login(c fiber.Ctx) error {
 	// Compte OAuth-only : pas de mot de passe local possible
 	if user.PasswordHash == nil || *user.PasswordHash == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  "error",
 			"message": "This account uses an external login",
 		})
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(req.Password)); err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  "error",
 			"message": "Invalid credentials",
 		})
 	}
 
 	if !user.IsConfirmed {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"status":  "error",
 			"message": "Account not confirmed, please check your email",
 		})
 	}
@@ -63,6 +70,7 @@ func Login(c fiber.Ctx) error {
 	sessionID, err := createSession(user.ID) // insert en DB/store, retourne l'ID de session
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
 			"message": "Server error",
 		})
 	}
@@ -76,5 +84,7 @@ func Login(c fiber.Ctx) error {
 		Expires:  time.Now().Add(7 * 24 * time.Hour),
 	})
 
-	return c.JSON(fiber.Map{"message": "Logged in"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Logged in",
+	})
 }
