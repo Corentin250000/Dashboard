@@ -10,6 +10,18 @@ import (
 	"gorm.io/gorm"
 )
 
+// ConfirmHandler validates an email confirmation token.
+// @Summary Confirm email
+// @Description Confirm a user account with the token sent by email.
+// @Tags auth
+// @Produce json
+// @Param token query string true "Email confirmation token"
+// @Success 200 {object} ConfirmedResponse
+// @Failure 400 {object} ConfirmBadRequestResponse
+// @Failure 404 {object} InvalidTokenResponse
+// @Failure 410 {object} ExpiredResponse
+// @Failure 500 {object} ConfirmErrorResponse
+// @Router /confirm [get]
 func ConfirmHandler(c fiber.Ctx) error {
 	if db == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{

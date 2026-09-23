@@ -16,6 +16,19 @@ type RegisterRequest struct {
 	Password string `json:"password" validate:"required,min=8"`
 }
 
+// Register creates a local account and sends an email confirmation token.
+// @Summary Register
+// @Description Create a user account. The account must be confirmed by email before login.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body RegisterRequest true "Registration credentials"
+// @Success 201 {object} RegisterSuccessResponse
+// @Failure 400 {object} RegisterBadRequestResponse
+// @Failure 409 {object} RegisterConflictResponse
+// @Failure 500 {object} RegisterServerErrorResponse
+// @Failure 503 {object} RegisterUnavailableResponse
+// @Router /auth/register [post]
 func Register(c fiber.Ctx) error {
 	if db == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{

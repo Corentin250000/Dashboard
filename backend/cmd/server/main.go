@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "dashboard-backend/docs"
 	"dashboard-backend/internal/about"
 	"dashboard-backend/internal/models"
 	"dashboard-backend/internal/routes/auth"
@@ -19,10 +20,24 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
+	"github.com/gofiber/swagger/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+type RootResponse struct {
+	Message string `json:"message" example:"dashboard API - see GET /about.json"`
+}
+
+type HealthResponse struct {
+	Status string `json:"status" example:"ok"`
+}
+
+// @title Dashboard API
+// @version 1.0
+// @description API for the Dashboard services, widgets, and user accounts.
+// @host localhost:8080
+// @BasePath /
 func main() {
 	database := connectDatabase()
 	if err := models.AutoMigrate(database); err != nil {
@@ -65,6 +80,10 @@ func main() {
 		Max:        3,
 		Expiration: 15 * time.Minute,
 	}), auth.ResendConfirmationHandler)
+	app.Get("/docs/swagger/*", swagger.New(swagger.Config{
+		URL:   "/docs/swagger/doc.json",
+		Title: "Dashboard API Reference",
+	}))
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 	})
@@ -119,6 +138,12 @@ func connectDatabase() *gorm.DB {
 	return nil
 }
 
+// @Summary Service catalog
+// @Description Return the available services and widgets for dashboard clients.
+// @Tags system
+// @Produce json
+// @Success 200 {object} about.Response
+// @Router /about.json [get]
 func handleAbout(c fiber.Ctx) error {
 	host := about.ClientIP(
 		c.Get(fiber.HeaderXForwardedFor),
@@ -128,10 +153,22 @@ func handleAbout(c fiber.Ctx) error {
 	return c.JSON(about.Build(host))
 }
 
+// @Summary Health check
+// @Description Check whether the API process is responding.
+// @Tags system
+// @Produce json
+// @Success 200 {object} HealthResponse
+// @Router /health [get]
 func handleHealth(c fiber.Ctx) error {
 	return c.JSON(fiber.Map{"status": "ok"})
 }
 
+// @Summary API root
+// @Description Return a pointer to the API catalog.
+// @Tags system
+// @Produce json
+// @Success 200 {object} RootResponse
+// @Router / [get]
 func handleRoot(c fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "dashboard API — see GET /about.json"})
 }

@@ -1,0 +1,459 @@
+basePath: /
+definitions:
+  about.Param:
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  about.Response:
+    properties:
+      client:
+        properties:
+          host:
+            type: string
+        type: object
+      server:
+        properties:
+          current_time:
+            type: integer
+          services:
+            items:
+              $ref: '#/definitions/about.Service'
+            type: array
+        type: object
+    type: object
+  about.Service:
+    properties:
+      name:
+        type: string
+      widgets:
+        items:
+          $ref: '#/definitions/about.Widget'
+        type: array
+    type: object
+  about.Widget:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/about.Param'
+        type: array
+    type: object
+  auth.ConfirmBadRequestResponse:
+    properties:
+      message:
+        example: missing token
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.ConfirmErrorResponse:
+    properties:
+      message:
+        example: database error
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.ConfirmedResponse:
+    properties:
+      status:
+        example: confirmed
+        type: string
+    type: object
+  auth.ExpiredResponse:
+    properties:
+      status:
+        example: expired
+        type: string
+    type: object
+  auth.InvalidTokenResponse:
+    properties:
+      message:
+        example: invalid or already used token
+        type: string
+      status:
+        example: invalid
+        type: string
+    type: object
+  auth.LoginBadRequestResponse:
+    properties:
+      message:
+        example: Invalid request body
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginServerErrorResponse:
+    properties:
+      message:
+        example: Server error
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.LoginSuccessResponse:
+    properties:
+      message:
+        example: Logged in
+        type: string
+    type: object
+  auth.LoginUnauthorizedResponse:
+    properties:
+      message:
+        example: Invalid credentials
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.LoginUnavailableResponse:
+    properties:
+      message:
+        example: database not configured
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.LoginUnconfirmedResponse:
+    properties:
+      message:
+        example: Account not confirmed, please check your email
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.RegisterBadRequestResponse:
+    properties:
+      message:
+        example: Invalid fields
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.RegisterConflictResponse:
+    properties:
+      message:
+        example: This email is already in use
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.RegisterServerErrorResponse:
+    properties:
+      message:
+        example: Server error
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.RegisterSuccessResponse:
+    properties:
+      message:
+        example: Account created, please check your email
+        type: string
+    type: object
+  auth.RegisterUnavailableResponse:
+    properties:
+      message:
+        example: database not configured
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.ResendBadRequestResponse:
+    properties:
+      message:
+        example: token required
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.ResendErrorResponse:
+    properties:
+      message:
+        example: database error
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.ResendNotFoundResponse:
+    properties:
+      message:
+        example: unknown token
+        type: string
+      status:
+        example: invalid
+        type: string
+    type: object
+  auth.ResendRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  auth.ResendSuccessResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  auth.ResendUnavailableResponse:
+    properties:
+      message:
+        example: database not configured
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  main.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  main.RootResponse:
+    properties:
+      message:
+        example: dashboard API - see GET /about.json
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for the Dashboard services, widgets, and user accounts.
+  title: Dashboard API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Return a pointer to the API catalog.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.RootResponse'
+      summary: API root
+      tags:
+      - system
+  /about.json:
+    get:
+      description: Return the available services and widgets for dashboard clients.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/about.Response'
+      summary: Service catalog
+      tags:
+      - system
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user with an email and password.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.LoginBadRequestResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/auth.LoginUnauthorizedResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/auth.LoginUnconfirmedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.LoginServerErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/auth.LoginUnavailableResponse'
+      summary: Log in
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a user account. The account must be confirmed by email before
+        login.
+      parameters:
+      - description: Registration credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.RegisterSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.RegisterBadRequestResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/auth.RegisterConflictResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.RegisterServerErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/auth.RegisterUnavailableResponse'
+      summary: Register
+      tags:
+      - auth
+  /confirm:
+    get:
+      description: Confirm a user account with the token sent by email.
+      parameters:
+      - description: Email confirmation token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.ConfirmedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.ConfirmBadRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/auth.InvalidTokenResponse'
+        "410":
+          description: Gone
+          schema:
+            $ref: '#/definitions/auth.ExpiredResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.ConfirmErrorResponse'
+      summary: Confirm email
+      tags:
+      - auth
+  /confirm/resend:
+    post:
+      consumes:
+      - application/json
+      description: Send a new email confirmation token for an unconfirmed account.
+      parameters:
+      - description: Current confirmation token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResendRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.ResendSuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.ResendBadRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/auth.ResendNotFoundResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.ResendErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/auth.ResendUnavailableResponse'
+      summary: Resend confirmation email
+      tags:
+      - auth
+  /health:
+    get:
+      description: Check whether the API process is responding.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.HealthResponse'
+      summary: Health check
+      tags:
+      - system
+swagger: "2.0"
