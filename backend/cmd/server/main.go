@@ -15,6 +15,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
@@ -59,6 +60,11 @@ func main() {
 	app.Add(getHead, "/", handleRoot)
 	app.Post("/auth/register", auth.Register)
 	app.Post("/auth/login", auth.Login)
+	app.Get("/confirm", auth.ConfirmHandler)
+	app.Post("/confirm/resend", limiter.New(limiter.Config{
+		Max:        3,
+		Expiration: 15 * time.Minute,
+	}), auth.ResendConfirmationHandler)
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 	})
