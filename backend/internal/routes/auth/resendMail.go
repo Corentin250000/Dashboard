@@ -15,6 +15,19 @@ type ResendRequest struct {
 	Token string `json:"token"`
 }
 
+// ResendConfirmationHandler rotates a confirmation token and sends it again.
+// @Summary Resend confirmation email
+// @Description Send a new email confirmation token for an unconfirmed account.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param token body ResendRequest true "Current confirmation token"
+// @Success 200 {object} ResendSuccessResponse
+// @Failure 400 {object} ResendBadRequestResponse
+// @Failure 404 {object} ResendNotFoundResponse
+// @Failure 500 {object} ResendErrorResponse
+// @Failure 503 {object} ResendUnavailableResponse
+// @Router /confirm/resend [post]
 func ResendConfirmationHandler(c fiber.Ctx) error {
 	if db == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{

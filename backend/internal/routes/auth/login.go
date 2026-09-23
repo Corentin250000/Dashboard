@@ -14,6 +14,20 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+// Login authenticates a confirmed local account and sets its session cookie.
+// @Summary Log in
+// @Description Authenticate a user with an email and password.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body LoginRequest true "Login credentials"
+// @Success 200 {object} LoginSuccessResponse
+// @Failure 400 {object} LoginBadRequestResponse
+// @Failure 401 {object} LoginUnauthorizedResponse
+// @Failure 403 {object} LoginUnconfirmedResponse
+// @Failure 500 {object} LoginServerErrorResponse
+// @Failure 503 {object} LoginUnavailableResponse
+// @Router /auth/login [post]
 func Login(c fiber.Ctx) error {
 	if db == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
