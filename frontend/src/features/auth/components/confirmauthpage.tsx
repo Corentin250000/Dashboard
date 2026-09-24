@@ -1,6 +1,6 @@
 import '../auth.css'
 
-function ConfirmAuthentificationPage() {
+function ConfirmAuthenticationPage() {
     return(
         <div className='auth-page'>
             <div className='auth-card'>
@@ -13,4 +13,4 @@ function ConfirmAuthentificationPage() {
     );
 }
 
-export default ConfirmAuthentificationPage;
+export default ConfirmAuthenticationPage;
