@@ -15,7 +15,8 @@ function RegisterPage() {
       return;
     }
 
-    fetch("auth/register", {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    fetch(`${apiUrl}/auth/login`, {
       method: 'POST',
       headers: {'Content-type': 'application/json'},
       body: JSON.stringify({email, password})
