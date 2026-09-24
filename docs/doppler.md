@@ -19,7 +19,7 @@ variables coming from `docker-compose.yml` / `.env`.
 The launch command never changes:
 
 ```bash
-docker compose up --build
+docker-compose up --build
 ```
 
 ## The service token (`.env`)
@@ -35,7 +35,7 @@ Get a token:
 1. Open the Doppler dashboard → project `dashboard` → config `dev` (or `prod`).
 2. Go to `Access` → `Service Tokens` → `Generate` (read-only is enough).
 3. Copy `.env.example` to `.env`.
-4. Fill in: `DOPPLER_TOKEN=dp.st.<...>` — then `docker compose up`.
+4. Fill in: `DOPPLER_TOKEN=dp.st.<...>` — then `docker-compose up`.
 
 Token behavior at startup:
 
@@ -45,11 +45,11 @@ Token behavior at startup:
 | Invalid / placeholder value | Startup fails (`Invalid Auth token`) — replace it with a real token |
 | Empty / unset | `doppler run` is skipped, the app starts with classic variables / fallbacks (this is the no-Doppler path, e.g. grading) |
 
-Because of the fallback row, `docker compose up` keeps working for anyone without
+Because of the fallback row, `docker-compose up` keeps working for anyone without
 a Doppler account: leave `DOPPLER_TOKEN` empty and fill the classic variables in
 `.env` instead (see `.env.example`, "Method B"). For that reason the
 `DOPPLER_TOKEN` line in `.env.example` is intentionally **commented out** by
-default, so a plain `cp .env.example .env && docker compose up` starts without
+default, so a plain `cp .env.example .env && docker-compose up` starts without
 Doppler.
 
 ## Secrets reference
@@ -60,10 +60,11 @@ Recreate these names in the Doppler dashboard (`dev` and `prod` configs):
 |---|---|---|
 | `DOPPLER_TOKEN` | server, db | Doppler service token (from `.env`, never committed) |
 | `PORT` | server | Backend listen port (`8080`, required by the subject) |
-| `JWT_SECRET` | server | Secret used to sign JWTs (generate a strong random value) |
+| `JWT_SECRET` | server | Reserved for future token-based authentication; the current login flow uses an HTTP-only `session_id` cookie |
 | `FRONTEND_URL` | server | Frontend URL (CORS / OAuth redirects) |
 | `API_KEY_SNCF` | server | External API key (injected by `doppler run` even without a Compose entry) |
-| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | db | Postgres credentials. Must stay in sync with the initialized `pgdata` volume: if you change them, recreate the volume with `docker compose down -v`, otherwise the database keeps the old credentials silently |
+| `API_KEY_MAILJET` / `SECRET_KEY_MAILJET` / `MAIL_SENDER_ACCOUNT` | server | Mailjet API credentials for confirmation emails + the sender email address |
+| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | db | Postgres credentials. Must stay in sync with the initialized `pgdata` volume: if you change them, recreate the volume with `docker-compose down -v`, otherwise the database keeps the old credentials silently |
 | `VITE_API_URL` | — | Informational only: the frontend build arg is resolved on the host at build time, so the Doppler value is not picked up by the client build (it uses the Compose default `http://localhost:8080`) |
 
 ## CI / production
@@ -73,7 +74,7 @@ Recreate these names in the Doppler dashboard (`dev` and `prod` configs):
 3. In the pipeline:
 
 ```bash
-DOPPLER_TOKEN="$DOPPLER_TOKEN" docker compose up --build -d
+DOPPLER_TOKEN="$DOPPLER_TOKEN" docker-compose up --build -d
 curl -sf http://localhost:8080/about.json
 ```
 
