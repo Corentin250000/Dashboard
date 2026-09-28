@@ -78,12 +78,13 @@
   margin: 20px 0 0;
 }
 
-.auth-switch link {
+.auth-link  {
   background: none;
   border: none;
-  color: var(--accent-secondary);
+  color: var(--accent);
   cursor: pointer;
   padding: 0;
+  text-decoration: none;
 }
 
 .auth-message {

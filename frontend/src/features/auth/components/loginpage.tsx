@@ -63,7 +63,7 @@ function LoginPage() {
 
         <p className="auth-switch">
           Don't have an account ?{' '}
-          <Link to="/register">Sign up</Link>
+          <Link className='auth-link' to="/register">Sign up</Link>
         </p>
       </div>
     </div>

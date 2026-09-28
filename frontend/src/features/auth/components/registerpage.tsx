@@ -58,7 +58,7 @@ function RegisterPage() {
 
         <p className="auth-switch">
           Already have an account ?{' '}
-          <Link to='/login'> log in </Link>
+          <Link className="auth-link" to='/login'> log in </Link>
         </p>
       </div>
     </div>
