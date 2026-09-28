@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './features/auth/components/loginpage'
-import RegisterPage from './features/auth/components/registerpage'
-import PendingVerification from './features/auth/components/pendingverificationpage'
-import ConfirmAuthentication from './features/auth/components/confirmauthpage';
+import LoginPage from './features/auth/components/loginpage';
+import RegisterPage from './features/auth/components/registerpage';
+import PendingVerification from './features/auth/components/pendingverificationpage';
+import VerifyEmailPage from './features/auth/components/verifyemailpage';
 import './App.css'
 
 function App() {
@@ -13,10 +13,9 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
-        <Route path="/confirm-authentication" element={<ConfirmAuthentication />} />
+        <Route path="/confirm" element={<VerifyEmailPage />} />
         {/* <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/subscription" element={<Subscription />} />
-                <Route path="/link-unavailable" element={<LinkUnavailable />} /> */}
+        <Route path="/subscription" element={<Subscription />} /> */}
       </Routes>
     </BrowserRouter>
   );

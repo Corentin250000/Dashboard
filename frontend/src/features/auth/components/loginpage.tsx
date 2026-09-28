@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { api } from '../../shared/api';
 import '../auth.css';
 
 
@@ -17,24 +18,12 @@ function LoginPage() {
       return;
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-    fetch(`${apiUrl}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ email, password }),
-    })
-      .then(async response => {
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || `Error ${response.status}`);
-        }
+    api.login(email, password)
+      .then(data => {
+        localStorage.setItem('token', data.token);
         navigate('/dashboard');
       })
-      .catch(error => {
-        console.log('Connection error:', error);
-        setErrorMessage(error instanceof Error ? error.message : 'Connection error');
-      });
+      .catch(error => setErrorMessage(error.message))
   };
 
   return (
