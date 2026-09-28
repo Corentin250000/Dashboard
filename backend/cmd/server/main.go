@@ -44,6 +44,7 @@ func main() {
 		log.Fatalf("database migration failed: %v", err)
 	}
 	auth.SetDB(database)
+	auth.ConfigureOAuth()
 
 	port := utils.GetEnv("PORT", "8080")
 	addr := ":" + port
@@ -75,6 +76,8 @@ func main() {
 	app.Add(getHead, "/", handleRoot)
 	app.Post("/auth/register", auth.Register)
 	app.Post("/auth/login", auth.Login)
+	app.Get("/auth/:provider", auth.OAuthStart)
+	app.Get("/auth/:provider/callback", auth.OAuthCallback)
 	app.Get("/confirm", auth.ConfirmHandler)
 	app.Post("/confirm/resend", limiter.New(limiter.Config{
 		Max:        3,
