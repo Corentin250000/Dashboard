@@ -29,7 +29,12 @@
   margin-bottom: 16px;
 }
 
-.auth-field label, p {
+.auth-field label {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.auth-field p {
   color: var(--text-secondary);
   font-size: 13px;
 }
@@ -79,6 +84,12 @@
   color: var(--accent-secondary);
   cursor: pointer;
   padding: 0;
+}
+
+.auth-message {
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .auth-error {
