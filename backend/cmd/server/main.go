@@ -13,6 +13,7 @@ import (
 	"dashboard-backend/internal/models"
 	"dashboard-backend/internal/routes/auth"
 	"dashboard-backend/internal/utils"
+	"dashboard-backend/internal/widgets"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -43,6 +44,19 @@ func main() {
 	if err := models.AutoMigrate(database); err != nil {
 		log.Fatalf("database migration failed: %v", err)
 	}
+
+	var stationCount int64
+	if err := database.Model(&models.SncfStation{}).Count(&stationCount).Error; err != nil {
+		log.Fatalf("failed to check SNCF stations: %v", err)
+	}
+	if stationCount == 0 {
+		go func() {
+			if err := widgets.GetAllStations(database); err != nil {
+				log.Printf("SNCF stations synchronization failed: %v", err)
+			}
+		}()
+	}
+	
 	auth.SetDB(database)
 
 	port := utils.GetEnv("PORT", "8080")
