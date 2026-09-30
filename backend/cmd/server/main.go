@@ -10,9 +10,10 @@ import (
 
 	_ "dashboard-backend/docs"
 	"dashboard-backend/internal/about"
+	"dashboard-backend/internal/auth"
 	"dashboard-backend/internal/models"
-	"dashboard-backend/internal/routes/auth"
 	"dashboard-backend/internal/utils"
+	"dashboard-backend/internal/widgets"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -36,13 +37,27 @@ type HealthResponse struct {
 // @title Dashboard API
 // @version 1.0
 // @description API for the Dashboard services, widgets, and user accounts.
-// @host localhost:8080
+// @host 127.0.0.1:8080
 // @BasePath /
 func main() {
 	database := connectDatabase()
 	if err := models.AutoMigrate(database); err != nil {
 		log.Fatalf("database migration failed: %v", err)
 	}
+
+	var stationCount int64
+	if err := database.Model(&models.SncfStation{}).Count(&stationCount).Error; err != nil {
+		log.Fatalf("failed to check SNCF stations: %v", err)
+	}
+	widgets.SetDB(database)
+	if stationCount == 0 {
+		go func() {
+			if err := widgets.GetAllStations(database); err != nil {
+				log.Printf("SNCF stations additions failed: %v", err)
+			}
+		}()
+	}
+
 	auth.SetDB(database)
 
 	port := utils.GetEnv("PORT", "8080")
@@ -84,6 +99,7 @@ func main() {
 		URL:   "/docs/swagger/doc.json",
 		Title: "Dashboard API Reference",
 	}))
+	app.Post("/api/sncf/departures", widgets.GetDepartures)
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 	})
@@ -190,11 +206,11 @@ func defaultAllowOrigins() []string {
 			origins = append(origins, o)
 		}
 	}
-	for _, o := range strings.Split(utils.GetEnv("FRONTEND_URL", "http://localhost:8081"), ",") {
+	for _, o := range strings.Split(utils.GetEnv("FRONTEND_URL", "http://127.0.0.1:8081"), ",") {
 		add(o)
 	}
-	add("http://localhost:5173")
-	add("http://localhost:8081")
-	add("http://localhost:8080")
+	add("http://127.0.0.1:5173")
+	add("http://127.0.0.1:8081")
+	add("http://127.0.0.1:8080")
 	return origins
 }

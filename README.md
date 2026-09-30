@@ -41,9 +41,9 @@ docker-compose up --build
 
 Then open:
 
-- Frontend: http://localhost:8081
-- API catalog: http://localhost:8080/about.json (should show `client.host`, `server.current_time`, `server.services`)
-- API reference: http://localhost:8080/docs/swagger/
+- Frontend: http://127.0.0.1:8081
+- API catalog: http://127.0.0.1:8080/about.json (should show `client.host`, `server.current_time`, `server.services`)
+- API reference: http://127.0.0.1:8080/docs/swagger/
 
 Stop with `Ctrl+C` (or `docker-compose down`). To reset the database as well:
 `docker-compose down -v` (⚠️ deletes all data).

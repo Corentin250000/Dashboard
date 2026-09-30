@@ -34,7 +34,20 @@ type Response struct {
 
 // Registry is the single source of truth for services/widgets.
 func Registry() []Service {
-	return []Service{}
+	return []Service{
+		{
+			Name: "sncf",
+			Widgets: []Widget{
+				{
+					Name:        "departures",
+					Description: "Display train departures for a station",
+					Params: []Param{
+						{Name: "station", Type: "string"},
+					},
+				},
+			},
+		},
+	}
 }
 
 // Build builds the full /about.json payload.
