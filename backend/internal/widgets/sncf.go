@@ -108,9 +108,45 @@ type TrainStationRequest struct {
 }
 
 type sncfDeparturesResponse struct {
-	ItemsOnPage  int `json:"items_on_page"`
-	Departures  json.RawMessage `json:"departures"`
-	Disruptions json.RawMessage `json:"disruptions"`
+	Departures  []sncfDeparture  `json:"departures"`
+	Disruptions []sncfDisruption `json:"disruptions"`
+}
+
+type sncfDeparture struct {
+	StopDateTime struct {
+		DepartureDateTime     string `json:"departure_date_time"`
+		BaseDepartureDateTime string `json:"base_departure_date_time"`
+	} `json:"stop_date_time"`
+	DisplayInformations struct {
+		Direction string `json:"direction"`
+	} `json:"display_informations"`
+	Links []struct {
+		Rel string `json:"rel"`
+		ID  string `json:"id"`
+	} `json:"links"`
+}
+
+type sncfDisruption struct {
+	ID              string `json:"id"`
+	ImpactedObjects []struct {
+		ImpactedStops []struct {
+			StopPoint struct {
+				ID string `json:"id"`
+			} `json:"stop_point"`
+			BaseDepartureTime    string `json:"base_departure_time"`
+			AmendedDepartureTime string `json:"amended_departure_time"`
+			StopTimeEffect       string `json:"stop_time_effect"`
+			DepartureStatus      string `json:"departure_status"`
+		} `json:"impacted_stops"`
+	} `json:"impacted_objects"`
+}
+
+type sncfDepartureResult struct {
+	ScheduledDeparture string `json:"scheduled_departure"`
+	Departure          string `json:"departure"`
+	Destination        string `json:"destination"`
+	DelayMinutes       int    `json:"delay_minutes"`
+	Cancelled          bool   `json:"cancelled"`
 }
 
 // SetDB configures the database used by widget handlers.
@@ -131,7 +167,6 @@ func getIdSncfStation(stationName string) (string, error) {
 	return station.ID, nil
 }
 
-// https://api.sncf.com/v1/coverage/sncf/stop_areas/{stop_areas.id}/departures?start_page=0&count=10
 func GetDepartures(c fiber.Ctx) error {
 	if db == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
@@ -216,9 +251,74 @@ func GetDepartures(c fiber.Ctx) error {
 		})
 	}
 
+	stationCode := strings.TrimPrefix(idStation, "stop_area:SNCF:")
+	results := make([]sncfDepartureResult, 0, len(payload.Departures))
+	for _, departure := range payload.Departures {
+		result := sncfDepartureResult{
+			ScheduledDeparture: departure.StopDateTime.BaseDepartureDateTime,
+			Departure:          departure.StopDateTime.DepartureDateTime,
+			Destination:        departure.DisplayInformations.Direction,
+		}
+
+		for _, link := range departure.Links {
+			if link.Rel != "disruptions" {
+				continue
+			}
+			for _, disruption := range payload.Disruptions {
+				if disruption.ID != link.ID {
+					continue
+				}
+				for _, impactedObject := range disruption.ImpactedObjects {
+					for _, impactedStop := range impactedObject.ImpactedStops {
+						if !strings.Contains(impactedStop.StopPoint.ID, ":"+stationCode+":") {
+							continue
+						}
+						if impactedStop.StopTimeEffect == "deleted" || impactedStop.DepartureStatus == "deleted" {
+							result.Cancelled = true
+						}
+						if impactedStop.AmendedDepartureTime != "" {
+							result.Departure = impactedStop.AmendedDepartureTime
+						}
+						if delay := departureDelayMinutes(impactedStop.BaseDepartureTime, impactedStop.AmendedDepartureTime); delay > result.DelayMinutes {
+							result.DelayMinutes = delay
+						}
+					}
+				}
+			}
+		}
+
+		if delay := departureDelayMinutes(result.ScheduledDeparture, result.Departure); delay > result.DelayMinutes {
+			result.DelayMinutes = delay
+		}
+		result.ScheduledDeparture = formatDepartureTime(result.ScheduledDeparture)
+		result.Departure = formatDepartureTime(result.Departure)
+		results = append(results, result)
+	}
+
 	return c.JSON(fiber.Map{
-		"itemsOnPage":  payload.ItemsOnPage,
-		"departures":  payload.Departures,
-		"disruptions": payload.Disruptions,
+		"departures":  results,
 	})
+}
+
+func departureDelayMinutes(scheduled, actual string) int {
+	if scheduled == "" || actual == "" {
+		return 0
+	}
+	scheduledTime, err := time.Parse("20060102T150405", scheduled)
+	if err != nil {
+		return 0
+	}
+	actualTime, err := time.Parse("20060102T150405", actual)
+	if err != nil || actualTime.Before(scheduledTime) {
+		return 0
+	}
+	return int(actualTime.Sub(scheduledTime).Minutes())
+}
+
+func formatDepartureTime(value string) string {
+	parsedTime, err := time.Parse("20060102T150405", value)
+	if err != nil {
+		return ""
+	}
+	return parsedTime.Format("15:04")
 }
