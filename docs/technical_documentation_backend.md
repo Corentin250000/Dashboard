@@ -526,20 +526,31 @@ unmatched route returns `404` with:
 ## Project Layout
 
 ```text
-backend/
-├── cmd/server/main.go          # Application bootstrap and route registration
-├── internal/about/about.go     # /about.json response and service registry
-├── internal/auth/              # Registration, login, confirmation, email flow
-├── internal/mail/              # Confirmation email template rendering
-├── internal/models/            # GORM models and AutoMigrate helper
-├── internal/theme/             # Email theme colors
-├── internal/utils/             # Environment and header helpers
-├── internal/widgets/sncf.go    # SNCF import and departures endpoint
-├── docs/                       # Generated Swagger/OpenAPI files
-├── Dockerfile                  # Multi-stage production image
-├── entrypoint.sh               # Doppler/no-Doppler startup wrapper
-├── go.mod                      # Go module and direct dependencies
-└── go.sum                      # Dependency checksums
+repo/
+├── backend/                    # Go API
+│   ├── cmd/server/main.go      # Application bootstrap and route registration
+│   ├── internal/               # API handlers and backend internals
+│   │   ├── about/              # /about.json response and service registry
+│   │   ├── auth/               # Registration, login, confirmation, email flow
+│   │   ├── mail/               # Confirmation email template rendering
+│   │   ├── models/             # GORM models and AutoMigrate helper
+│   │   ├── theme/              # Email theme colors
+│   │   ├── utils/              # Environment and header helpers
+│   │   └── widgets/            # Widgets endpoints
+│   ├── docs/                   # Generated Swagger/OpenAPI files
+│   ├── Dockerfile              # Multi-stage image with Doppler CLI
+│   ├── entrypoint.sh           # Doppler/no-Doppler startup wrapper
+│   ├── go.mod                  # Go module and direct dependencies
+│   └── go.sum                  # Dependency checksums
+├── frontend/                  # React + Vite application
+│   └── Dockerfile              # Vite preview server on port 8081
+├── db/                        # PostgreSQL image and Doppler wrapper
+│   ├── migrations/             # SQL schema reference files
+│   ├── Dockerfile              # PostgreSQL 16 image
+│   └── entrypoint.sh           # Doppler/no-Doppler database wrapper
+├── docker-compose.yml          # server (:8080), db (internal), client (:8081)
+├── .env.example                # Doppler and classic environment templates
+└── docs/doppler.md             # Doppler secrets-management documentation
 ```
 
 ## Development Guidelines
