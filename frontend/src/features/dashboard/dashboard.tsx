@@ -3,7 +3,7 @@ import SncfWidget from './widgets/sncf/SncfWidget';
 
 function Dashboard() {
     return (
-        <SncfWidget station='Mulhouse'/>
+        <SncfWidget station='Marseille Saint-Charles'/>
     );
 }
 
