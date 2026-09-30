@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"net"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -79,6 +81,7 @@ func main() {
 	allowOrigins := defaultAllowOrigins()
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     allowOrigins,
+		AllowOriginsFunc: allowFrontendOrigin(allowOrigins),
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -213,4 +216,39 @@ func defaultAllowOrigins() []string {
 	add("http://127.0.0.1:8081")
 	add("http://127.0.0.1:8080")
 	return origins
+}
+
+func allowFrontendOrigin(configured []string) func(string) bool {
+	allowed := make(map[string]struct{}, len(configured))
+	for _, origin := range configured {
+		allowed[origin] = struct{}{}
+	}
+
+	return func(origin string) bool {
+		if _, ok := allowed[origin]; ok {
+			return true
+		}
+
+		parsed, err := url.Parse(origin)
+		if err != nil || parsed.Hostname() == "" || parsed.User != nil {
+			return false
+		}
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return false
+		}
+		if parsed.Port() != "5173" && parsed.Port() != "8081" {
+			return false
+		}
+
+		addresses, err := net.LookupIP(parsed.Hostname())
+		if err != nil {
+			return false
+		}
+		for _, address := range addresses {
+			if address.IsLoopback() {
+				return true
+			}
+		}
+		return false
+	}
 }

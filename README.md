@@ -22,7 +22,7 @@ not usable yet — see *Features* below for what is live vs planned.
 
 | Area | State |
 |---|---|
-| `GET /about.json` (service/widget catalog, required by the subject) | ✅ Live, currently returns `"services": []` |
+| `GET /about.json` (service/widget catalog) | ✅ Live |
 | `GET /health`, `GET /` | ✅ Live |
 | Frontend authentication shell (React, served on port 8081) | ✅ Live |
 | User registration / login | ✅ Live, email confirmation required |
@@ -109,7 +109,7 @@ repo/
 ├── backend/               Go API (cmd/server, internal/about)
 │   ├── Dockerfile         multi-stage build + Doppler CLI, CMD via doppler run
 │   ├── docs/               generated Swagger/OpenAPI files
-│   └── internal/routes/    API handlers, including authentication
+│   └── internal/    API handlers, including authentication
 │   └── entrypoint.sh      starts with Doppler if DOPPLER_TOKEN is set, else directly
 ├── frontend/              React+Vite app (Dockerfile: vite preview on :8081)
 ├── db/                    Postgres image + Doppler wrapper entrypoint
