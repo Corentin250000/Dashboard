@@ -53,6 +53,6 @@ export const api = {
     getSncfDepartures: (station: string) =>
       request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
         { method: 'POST',
-          body: JSON.stringify({ station }),
+          body: JSON.stringify({ text: station }),
         }),
 };
