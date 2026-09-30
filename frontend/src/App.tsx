@@ -3,6 +3,7 @@ import LoginPage from './features/auth/components/loginpage';
 import RegisterPage from './features/auth/components/registerpage';
 import PendingVerification from './features/auth/components/pendingverificationpage';
 import VerifyEmailPage from './features/auth/components/verifyemailpage';
+import SubscriptionPage from './features/subscription/components/subspage';
 import './App.css'
 
 function App() {
@@ -14,8 +15,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
         <Route path="/confirm" element={<VerifyEmailPage />} />
-        {/* <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/subscription" element={<Subscription />} /> */}
+        <Route path="/subscription" element={<SubscriptionPage />} />
+        {/* <Route path="/dashboard" element={<Dashboard />} /> */}
       </Routes>
     </BrowserRouter>
   );
