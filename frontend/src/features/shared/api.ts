@@ -19,6 +19,7 @@ export type SncfDeparture = {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
+    credentials: 'include',
     ...options,
   });
 
@@ -53,6 +54,6 @@ export const api = {
     getSncfDepartures: (station: string) =>
       request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
         { method: 'POST',
-          body: JSON.stringify({ station }),
+          body: JSON.stringify({ text: station }),
         }),
 };
