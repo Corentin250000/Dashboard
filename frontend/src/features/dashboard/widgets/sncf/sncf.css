@@ -69,3 +69,8 @@
   font-size: 13px;
   margin: 0 0 8px;
 }
+
+.sncf-time-delay {
+  font-weight: 500;
+  color: var(--accent-secondary);
+}
