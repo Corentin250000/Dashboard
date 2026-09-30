@@ -37,7 +37,7 @@ type HealthResponse struct {
 // @title Dashboard API
 // @version 1.0
 // @description API for the Dashboard services, widgets, and user accounts.
-// @host localhost:8080
+// @host 127.0.0.1:8080
 // @BasePath /
 func main() {
 	database := connectDatabase()
@@ -206,11 +206,11 @@ func defaultAllowOrigins() []string {
 			origins = append(origins, o)
 		}
 	}
-	for _, o := range strings.Split(utils.GetEnv("FRONTEND_URL", "http://localhost:8081"), ",") {
+	for _, o := range strings.Split(utils.GetEnv("FRONTEND_URL", "http://127.0.0.1:8081"), ",") {
 		add(o)
 	}
-	add("http://localhost:5173")
-	add("http://localhost:8081")
-	add("http://localhost:8080")
+	add("http://127.0.0.1:5173")
+	add("http://127.0.0.1:8081")
+	add("http://127.0.0.1:8080")
 	return origins
 }

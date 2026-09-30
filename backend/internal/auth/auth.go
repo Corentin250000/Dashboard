@@ -70,7 +70,7 @@ func sendConfirmationEmail(email, token string) {
 		return
 	}
 
-	frontendURL := utils.GetEnv("FRONTEND_URL", "http://localhost:8081")
+	frontendURL := utils.GetEnv("FRONTEND_URL", "http://127.0.0.1:8081")
 	confirmationLink := fmt.Sprintf("%s/confirm?token=%s", strings.TrimSuffix(frontendURL, "/"), token)
 
 	client := mailjet.NewMailjetClient(apiKey, secretKey)
