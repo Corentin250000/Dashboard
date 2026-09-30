@@ -141,12 +141,46 @@ type sncfDisruption struct {
 	} `json:"impacted_objects"`
 }
 
-type sncfDepartureResult struct {
+type SncfDepartureResponse struct {
 	ScheduledDeparture string `json:"scheduled_departure"`
 	Departure          string `json:"departure"`
 	Destination        string `json:"destination"`
 	DelayMinutes       int    `json:"delay_minutes"`
 	Cancelled          bool   `json:"cancelled"`
+}
+
+type SncfDeparturesResponse struct {
+	Departures []SncfDepartureResponse `json:"departures"`
+}
+
+type SncfErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Invalid request body"`
+}
+
+type SncfBadRequestResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"The request body must contain a non-empty text field."`
+}
+
+type SncfNotFoundResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"The requested station was not found in the SNCF catalog."`
+}
+
+type SncfServerErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to create the SNCF request."`
+}
+
+type SncfBadGatewayResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"The SNCF API is unavailable or returned an invalid response."`
+}
+
+type SncfUnavailableResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"The SNCF API is not configured."`
 }
 
 // SetDB configures the database used by widget handlers.
@@ -160,18 +194,32 @@ func getIdSncfStation(stationName string) (string, error) {
 
 	if err := db.Where("name = ?", stationName).Order("id ASC").First(&station).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", fiber.ErrNotFound
+			return "", fiber.NewError(fiber.StatusNotFound, "The requested station was not found in the SNCF catalog")
 		}
 		return "", fmt.Errorf("find SNCF station %q: %w", stationName, err)
 	}
 	return station.ID, nil
 }
 
+// GetDepartures returns the next departures for a station.
+// @Summary SNCF departures
+// @Description Returns departure times, destinations, delays and cancellations for a station.
+// @Tags SNCF
+// @Accept json
+// @Produce json
+// @Param station body TrainStationRequest true "Station name"
+// @Success 200 {object} SncfDeparturesResponse
+// @Failure 400 {object} SncfBadRequestResponse
+// @Failure 404 {object} SncfNotFoundResponse
+// @Failure 500 {object} SncfServerErrorResponse
+// @Failure 502 {object} SncfBadGatewayResponse
+// @Failure 503 {object} SncfUnavailableResponse
+// @Router /api/sncf/departures [post]
 func GetDepartures(c fiber.Ctx) error {
 	if db == nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
 			"status":  "error",
-			"message": "database not configured",
+			"message": "The database is not configured.",
 		})
 	}
 	var req TrainStationRequest
@@ -179,7 +227,7 @@ func GetDepartures(c fiber.Ctx) error {
 	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Invalid request body",
+			"message": "The request body must contain a non-empty text field.",
 		})
 	}
 	req.TrainStation = strings.TrimSpace(req.TrainStation)
@@ -187,7 +235,7 @@ func GetDepartures(c fiber.Ctx) error {
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Invalid fields",
+			"message": "The request body must contain a non-empty text field.",
 		})
 	}
 
@@ -201,7 +249,7 @@ func GetDepartures(c fiber.Ctx) error {
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Unable to find station",
+			"message": "Unable to query the station catalog.",
 		})
 	}
 
@@ -209,7 +257,7 @@ func GetDepartures(c fiber.Ctx) error {
 	if apiKey == "" {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
 			"status":  "error",
-			"message": "SNCF API not configured",
+			"message": "The SNCF API is not configured.",
 		})
 	}
 
@@ -222,7 +270,7 @@ func GetDepartures(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Unable to create SNCF request",
+			"message": "Unable to create the SNCF request.",
 		})
 	}
 	request.SetBasicAuth(apiKey, "")
@@ -231,7 +279,7 @@ func GetDepartures(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Unable to reach SNCF API",
+			"message": "Unable to reach the SNCF API.",
 		})
 	}
 	defer response.Body.Close()
@@ -239,7 +287,7 @@ func GetDepartures(c fiber.Ctx) error {
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
 			"status":  "error",
-			"message": fmt.Sprintf("SNCF API returned HTTP %d", response.StatusCode),
+			"message": fmt.Sprintf("The SNCF API returned HTTP %d.", response.StatusCode),
 		})
 	}
 
@@ -247,14 +295,14 @@ func GetDepartures(c fiber.Ctx) error {
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
 		return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Invalid response from SNCF API",
+			"message": "The SNCF API returned an invalid response.",
 		})
 	}
 
 	stationCode := strings.TrimPrefix(idStation, "stop_area:SNCF:")
-	results := make([]sncfDepartureResult, 0, len(payload.Departures))
+	results := make([]SncfDepartureResponse, 0, len(payload.Departures))
 	for _, departure := range payload.Departures {
-		result := sncfDepartureResult{
+		result := SncfDepartureResponse{
 			ScheduledDeparture: departure.StopDateTime.BaseDepartureDateTime,
 			Departure:          departure.StopDateTime.DepartureDateTime,
 			Destination:        departure.DisplayInformations.Direction,
@@ -295,9 +343,7 @@ func GetDepartures(c fiber.Ctx) error {
 		results = append(results, result)
 	}
 
-	return c.JSON(fiber.Map{
-		"departures":  results,
-	})
+	return c.JSON(SncfDeparturesResponse{Departures: results})
 }
 
 func departureDelayMinutes(scheduled, actual string) int {
