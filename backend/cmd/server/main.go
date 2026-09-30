@@ -80,7 +80,6 @@ func main() {
 	// a wildcard "*" is rejected by browsers when credentials are sent.
 	allowOrigins := defaultAllowOrigins()
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     allowOrigins,
 		AllowOriginsFunc: allowFrontendOrigin(allowOrigins),
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},

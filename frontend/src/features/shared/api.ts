@@ -8,6 +8,14 @@ export class ApiError extends Error {
   }
 }
 
+export type SncfDeparture = {
+  scheduled_departure: string;
+  departure: string;
+  destination: string;
+  delay_minutes: number;
+  cancelled: boolean;
+};
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
@@ -23,22 +31,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
     login: (email: string, password: string) =>
-        request<{ token: string }>('/auth/login', {
+        request<{ token: string }>('/auth/login',
+          {
             method: 'POST',
             body: JSON.stringify({ email, password }),
-    }),
+          }),
     register: (email: string, password: string) =>
-        request<{ token: string }>('/auth/register', {
+        request<{ token: string }>('/auth/register',
+          {
             method: 'POST',
             body: JSON.stringify({ email, password }),
-    }),
+          }),
     confirmEmail: (token: string) =>
         request<{ status: 'confirmed' | 'already_confirmed' | 'expired' | 'invalid' }>(
             `/confirm?token=${encodeURIComponent(token)}`,
             { method: 'GET' }
     ),
     resendConfirmation: () =>
-        request<{ status: 'invalid' | 'already_confirmed' }>('/confirm/resend', {
-            method: 'POST',
-    }),
+        request<{ status: 'invalid' | 'already_confirmed' }>('/confirm/resend',
+          { method: 'POST' }
+        ),
+    getSncfDepartures: (station: string) =>
+      request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
+        { method: 'POST',
+          body: JSON.stringify({ text: station }),
+        }),
 };
