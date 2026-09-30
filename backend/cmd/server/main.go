@@ -10,8 +10,8 @@ import (
 
 	_ "dashboard-backend/docs"
 	"dashboard-backend/internal/about"
+	"dashboard-backend/internal/auth"
 	"dashboard-backend/internal/models"
-	"dashboard-backend/internal/routes/auth"
 	"dashboard-backend/internal/utils"
 	"dashboard-backend/internal/widgets"
 
@@ -49,14 +49,15 @@ func main() {
 	if err := database.Model(&models.SncfStation{}).Count(&stationCount).Error; err != nil {
 		log.Fatalf("failed to check SNCF stations: %v", err)
 	}
+	widgets.SetDB(database)
 	if stationCount == 0 {
 		go func() {
 			if err := widgets.GetAllStations(database); err != nil {
-				log.Printf("SNCF stations synchronization failed: %v", err)
+				log.Printf("SNCF stations additions failed: %v", err)
 			}
 		}()
 	}
-	
+
 	auth.SetDB(database)
 
 	port := utils.GetEnv("PORT", "8080")
@@ -98,6 +99,7 @@ func main() {
 		URL:   "/docs/swagger/doc.json",
 		Title: "Dashboard API Reference",
 	}))
+	app.Post("/api/sncf/departures", widgets.GetDepartures)
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 	})
