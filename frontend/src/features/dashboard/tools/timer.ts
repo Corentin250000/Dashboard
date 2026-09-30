@@ -6,6 +6,8 @@ export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, resta
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (!restartKey) return;
+
     const load = () => {
       fetcher()
         .then((res) => {
