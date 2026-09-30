@@ -55,6 +55,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/sncf/departures": {
+            "post": {
+                "description": "Returns departure times, destinations, delays and cancellations for a station.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SNCF"
+                ],
+                "summary": "SNCF departures",
+                "parameters": [
+                    {
+                        "description": "Station name",
+                        "name": "station",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/widgets.TrainStationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfDeparturesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfBadRequestResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfNotFoundResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfServerErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfBadGatewayResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticate a user with an email and password.",
@@ -688,6 +752,113 @@ const docTemplate = `{
                     "example": "dashboard API - see GET /about.json"
                 }
             }
+        },
+        "widgets.SncfBadGatewayResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The SNCF API is unavailable or returned an invalid response."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.SncfBadRequestResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The request body must contain a non-empty text field."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.SncfDepartureResponse": {
+            "type": "object",
+            "properties": {
+                "cancelled": {
+                    "type": "boolean"
+                },
+                "delay_minutes": {
+                    "type": "integer"
+                },
+                "departure": {
+                    "type": "string"
+                },
+                "destination": {
+                    "type": "string"
+                },
+                "scheduled_departure": {
+                    "type": "string"
+                }
+            }
+        },
+        "widgets.SncfDeparturesResponse": {
+            "type": "object",
+            "properties": {
+                "departures": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.SncfDepartureResponse"
+                    }
+                }
+            }
+        },
+        "widgets.SncfNotFoundResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The requested station was not found in the SNCF catalog."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.SncfServerErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Unable to create the SNCF request."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.SncfUnavailableResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The SNCF API is not configured."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.TrainStationRequest": {
+            "type": "object",
+            "required": [
+                "text"
+            ],
+            "properties": {
+                "text": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
@@ -695,7 +866,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "127.0.0.1:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Dashboard API",

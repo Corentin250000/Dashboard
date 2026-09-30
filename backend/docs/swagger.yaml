@@ -256,7 +256,79 @@ definitions:
         example: dashboard API - see GET /about.json
         type: string
     type: object
-host: localhost:8080
+  widgets.SncfBadGatewayResponse:
+    properties:
+      message:
+        example: The SNCF API is unavailable or returned an invalid response.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SncfBadRequestResponse:
+    properties:
+      message:
+        example: The request body must contain a non-empty text field.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SncfDepartureResponse:
+    properties:
+      cancelled:
+        type: boolean
+      delay_minutes:
+        type: integer
+      departure:
+        type: string
+      destination:
+        type: string
+      scheduled_departure:
+        type: string
+    type: object
+  widgets.SncfDeparturesResponse:
+    properties:
+      departures:
+        items:
+          $ref: '#/definitions/widgets.SncfDepartureResponse'
+        type: array
+    type: object
+  widgets.SncfNotFoundResponse:
+    properties:
+      message:
+        example: The requested station was not found in the SNCF catalog.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SncfServerErrorResponse:
+    properties:
+      message:
+        example: Unable to create the SNCF request.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SncfUnavailableResponse:
+    properties:
+      message:
+        example: The SNCF API is not configured.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.TrainStationRequest:
+    properties:
+      text:
+        type: string
+    required:
+    - text
+    type: object
+host: 127.0.0.1:8080
 info:
   contact: {}
   description: API for the Dashboard services, widgets, and user accounts.
@@ -289,6 +361,49 @@ paths:
       summary: Service catalog
       tags:
       - system
+  /api/sncf/departures:
+    post:
+      consumes:
+      - application/json
+      description: Returns departure times, destinations, delays and cancellations
+        for a station.
+      parameters:
+      - description: Station name
+        in: body
+        name: station
+        required: true
+        schema:
+          $ref: '#/definitions/widgets.TrainStationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/widgets.SncfDeparturesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/widgets.SncfBadRequestResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/widgets.SncfNotFoundResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/widgets.SncfServerErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/widgets.SncfBadGatewayResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/widgets.SncfUnavailableResponse'
+      summary: SNCF departures
+      tags:
+      - SNCF
   /auth/login:
     post:
       consumes:

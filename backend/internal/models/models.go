@@ -7,12 +7,6 @@ import (
 )
 
 /*
-  This file mirrors db/migrations/001_init_schema.sql.
-  The SQL file is the source of truth (CHECK constraints, indexes, triggers);
-  the tags below keep GORM's AutoMigrate output compatible with it.
-*/
-
-/*
 User is a platform account. password_hash is NULL for OAuth-only users.
 Confirmation gate: login is blocked while IsConfirmed is false.
 */
@@ -48,6 +42,14 @@ type Service struct {
 }
 
 func (Service) TableName() string { return "services" }
+
+// SncfStation is a station from the Navitia stop_areas catalog.
+type SncfStation struct {
+	ID   string `gorm:"type:text;primaryKey"`
+	Name string `gorm:"type:text;not null"`
+}
+
+func (SncfStation) TableName() string { return "sncf_stations" }
 
 /*
 UserService links a user to a service they subscribed to.
@@ -126,6 +128,7 @@ func All() []any {
 	return []any{
 		&User{},
 		&Service{},
+		&SncfStation{},
 		&UserService{},
 		&Widget{},
 		&WidgetParam{},
