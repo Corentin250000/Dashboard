@@ -9,7 +9,7 @@ type Props = {
 function SncfWidget({ station }: Props) {
   const { data, error } = useTimer(
     () => api.getSncfDepartures(station),
-    50000,
+    300000,
     station
   );
 

@@ -12,10 +12,7 @@ export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, resta
           setData(res);
           setError(false);
         })
-        .catch((err) => {
-  console.error(err);
-  setError(true);
-});
+        .catch(() => setError(true));
     };
 
     load();
