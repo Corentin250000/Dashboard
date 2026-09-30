@@ -27,10 +27,12 @@ not usable yet — see *Features* below for what is live vs planned.
 | Frontend authentication shell (React, served on port 8081) | ✅ Live |
 | User registration / login | ✅ Live, email confirmation required |
 | Admin section | 🔲 Planned |
-| Services & widgets (weather, RSS, GitHub, …) | 🔲 Planned — declared in `backend/internal/about/about.go` (`Registry()`), which is the single source of truth feeding `/about.json` |
+| Services & widgets (weather, RSS, GitHub, …) | 🔲 In progress — declared in `backend/internal/about/about.go` (`Registry()`), which is the single source of truth feeding `/about.json` |
 | Per-widget timer refresh | 🔲 Planned |
 
 ## Run and use the app
+
+For complete environment and installation instructions, see the [setup guide](SETUP.md).
 
 Prerequisites: **Docker** + **Docker Compose** only. No Doppler account needed.
 
@@ -109,7 +111,7 @@ repo/
 ├── backend/               Go API (cmd/server, internal/about)
 │   ├── Dockerfile         multi-stage build + Doppler CLI, CMD via doppler run
 │   ├── docs/               generated Swagger/OpenAPI files
-│   └── internal/    API handlers, including authentication
+│   ├── internal/          API handlers, including authentication
 │   └── entrypoint.sh      starts with Doppler if DOPPLER_TOKEN is set, else directly
 ├── frontend/              React+Vite app (Dockerfile: vite preview on :8081)
 ├── db/                    Postgres image + Doppler wrapper entrypoint
