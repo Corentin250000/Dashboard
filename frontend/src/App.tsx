@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './features/auth/components/loginpage';
-import RegisterPage from './features/auth/components/registerpage';
-import PendingVerification from './features/auth/components/pendingverificationpage';
-import VerifyEmailPage from './features/auth/components/verifyemailpage';
+import LoginPage from './features/auth/pages/loginpage';
+import RegisterPage from './features/auth/pages/registerpage';
+import PendingVerification from './features/auth/pages/pendingverificationpage';
+import VerifyEmailPage from './features/auth/pages/verifyemailpage';
 import SubscriptionPage from './features/subscription/components/subspage';
 import Dashboard from './features/dashboard/dashboard'
 import './App.css'
