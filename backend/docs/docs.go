@@ -55,9 +55,255 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/me/widgets": {
+            "get": {
+                "description": "Return every widget instance placed on the dashboard of the current user, ordered by creation date. Requires the session_id cookie.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "widgets"
+                ],
+                "summary": "List dashboard widgets",
+                "responses": {
+                    "200": {
+                        "description": "The dashboard widgets of the current user.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetInstanceListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, expired or invalid session cookie.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Unable to load widgets.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetServerErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnavailableResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a widget instance. The type must use the \"service.widget\" format (e.g. \"sncf.departures\"), the size must be allowed for that widget, the refresh rate must be at least 60 seconds, and the position is the zero-based top-left cell on the 6x6 desktop grid. The new widget must fit inside the grid without overlapping an existing widget.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "widgets"
+                ],
+                "summary": "Create a dashboard widget",
+                "parameters": [
+                    {
+                        "description": "Widget to create (type, size, config, refresh_rate_seconds, position)",
+                        "name": "widget",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/widgets.CreateWidgetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The created widget instance.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetInstanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed JSON body or missing type, size, refresh_rate_seconds or position.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetBadRequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, expired or invalid session cookie.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnauthorizedResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Unknown widget type (unknown service, unknown widget, or malformed type string).",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetTypeNotFoundResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "The new widget overlaps another widget of the dashboard.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetConflictResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnprocessableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Unable to create the widget.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetServerErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/widgets/{id}": {
+            "delete": {
+                "description": "Delete a widget instance from the dashboard of the current user. Only the instance is removed; the widget catalog entry and the other widgets are untouched. Returns an empty body.",
+                "tags": [
+                    "widgets"
+                ],
+                "summary": "Delete a dashboard widget",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Widget instance ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The widget was deleted (empty body)."
+                    },
+                    "400": {
+                        "description": "The widget ID is not a valid UUID.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetInvalidIDResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, expired or invalid session cookie.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnauthorizedResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No widget with this ID on the dashboard of the current user.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetInstanceNotFoundResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Unable to delete the widget.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetServerErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnavailableResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update any subset of size, config, refresh rate or position. Omitted fields are left unchanged. The widget type cannot be changed. After applying the patch, the whole dashboard layout is revalidated: the widget must fit inside the 6x6 desktop grid without overlapping another widget.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "widgets"
+                ],
+                "summary": "Update a dashboard widget",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Widget instance ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update (only non-null fields are applied)",
+                        "name": "widget",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/widgets.UpdateWidgetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated widget instance.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetInstanceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed widget ID, malformed JSON body, or empty patch (no updatable field provided).",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetBadRequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, expired or invalid session cookie.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnauthorizedResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No widget with this ID on the dashboard of the current user.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetInstanceNotFoundResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "The updated widget would overlap another widget of the dashboard.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetConflictResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnprocessableResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Unable to update the widget.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetServerErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.WidgetUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/sncf/departures": {
             "post": {
-                "description": "Returns departure times, destinations, delays and cancellations for a station.",
+                "description": "Returns the next 10 departures (scheduled time, real time, destination, delay in minutes, cancellation flag) for a station. The station name is matched exactly against the SNCF stop_areas catalog. Public route: no authentication required.",
                 "consumes": [
                     "application/json"
                 ],
@@ -70,7 +316,7 @@ const docTemplate = `{
                 "summary": "SNCF departures",
                 "parameters": [
                     {
-                        "description": "Station name",
+                        "description": "Station name exactly as listed in the SNCF catalog (e.g. Paris Gare du Nord)",
                         "name": "station",
                         "in": "body",
                         "required": true,
@@ -81,37 +327,37 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Up to 10 upcoming departures, earliest first.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfDeparturesResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Malformed JSON body or missing/empty text field.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfBadRequestResponse"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "No station with this exact name in the SNCF catalog.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfNotFoundResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Station lookup or SNCF request construction failed.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfServerErrorResponse"
                         }
                     },
                     "502": {
-                        "description": "Bad Gateway",
+                        "description": "SNCF API unreachable, non-2xx response, or invalid payload.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfBadGatewayResponse"
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable",
+                        "description": "API_KEY_SNCF is not set on the server.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfUnavailableResponse"
                         }
@@ -121,7 +367,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticate a user with an email and password.",
+                "description": "Authenticate a user with email and password. On success persists a 7-day session in the database and sets the HTTP-only session_id cookie (SameSite Lax). OAuth-only accounts (no local password) cannot use this route.",
                 "consumes": [
                     "application/json"
                 ],
@@ -134,7 +380,7 @@ const docTemplate = `{
                 "summary": "Log in",
                 "parameters": [
                     {
-                        "description": "Login credentials",
+                        "description": "Login credentials (valid email + password)",
                         "name": "credentials",
                         "in": "body",
                         "required": true,
@@ -145,37 +391,37 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Authenticated: session cookie set.",
                         "schema": {
                             "$ref": "#/definitions/auth.LoginSuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Malformed JSON body, missing fields, or invalid email format.",
                         "schema": {
                             "$ref": "#/definitions/auth.LoginBadRequestResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Unknown email, wrong password, or account without local password (use OAuth instead).",
                         "schema": {
                             "$ref": "#/definitions/auth.LoginUnauthorizedResponse"
                         }
                     },
                     "403": {
-                        "description": "Forbidden",
+                        "description": "Account created but email not confirmed yet (check /confirm).",
                         "schema": {
                             "$ref": "#/definitions/auth.LoginUnconfirmedResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Password comparison or session creation failed.",
                         "schema": {
                             "$ref": "#/definitions/auth.LoginServerErrorResponse"
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable",
+                        "description": "The database is not configured.",
                         "schema": {
                             "$ref": "#/definitions/auth.LoginUnavailableResponse"
                         }
@@ -185,7 +431,7 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "description": "Revoke the current authenticated browser session.",
+                "description": "Delete the current session from the database and clear the HTTP-only session_id cookie. Third-party service tokens (user_services) are kept: disconnecting a service is a separate operation.",
                 "produces": [
                     "application/json"
                 ],
@@ -195,21 +441,21 @@ const docTemplate = `{
                 "summary": "Log out",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "The session was revoked and the cookie cleared.",
                         "schema": {
                             "$ref": "#/definitions/auth.LogoutSuccessResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Missing session cookie, or expired/invalid session (cookie is cleared).",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.SessionUnauthorizedResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Unable to log out (database error).",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.SessionErrorResponse"
                         }
                     }
                 }
@@ -217,7 +463,7 @@ const docTemplate = `{
         },
         "/auth/me": {
             "get": {
-                "description": "Return the account associated with the current browser session.",
+                "description": "Return the id and email of the account associated with the current browser session. Used by the frontend on page load to decide whether to show \"Log in\" or \"Log out\". Requires the session_id cookie.",
                 "produces": [
                     "application/json"
                 ],
@@ -227,21 +473,21 @@ const docTemplate = `{
                 "summary": "Current user",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "The id and email of the authenticated user.",
                         "schema": {
                             "$ref": "#/definitions/auth.CurrentUserResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Missing session cookie, or expired/invalid session (cookie is cleared).",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.SessionUnauthorizedResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Unable to validate session.",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.SessionErrorResponse"
                         }
                     }
                 }
@@ -249,7 +495,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Create a user account. The account must be confirmed by email before login.",
+                "description": "Create a user account with email and password (minimum 8 characters). The account stays unconfirmed until the emailed token is validated via GET /confirm, and login is blocked meanwhile. No session is created here.",
                 "consumes": [
                     "application/json"
                 ],
@@ -262,7 +508,7 @@ const docTemplate = `{
                 "summary": "Register",
                 "parameters": [
                     {
-                        "description": "Registration credentials",
+                        "description": "Registration credentials (valid email + password of at least 8 characters)",
                         "name": "credentials",
                         "in": "body",
                         "required": true,
@@ -273,31 +519,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Account created: check the inbox for the confirmation email.",
                         "schema": {
                             "$ref": "#/definitions/auth.RegisterSuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Malformed JSON body, invalid email format, or password shorter than 8 characters.",
                         "schema": {
                             "$ref": "#/definitions/auth.RegisterBadRequestResponse"
                         }
                     },
                     "409": {
-                        "description": "Conflict",
+                        "description": "This email address is already registered.",
                         "schema": {
                             "$ref": "#/definitions/auth.RegisterConflictResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Password hashing, token generation, or account creation failed.",
                         "schema": {
                             "$ref": "#/definitions/auth.RegisterServerErrorResponse"
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable",
+                        "description": "The database is not configured.",
                         "schema": {
                             "$ref": "#/definitions/auth.RegisterUnavailableResponse"
                         }
@@ -307,7 +553,7 @@ const docTemplate = `{
         },
         "/auth/{provider}": {
             "get": {
-                "description": "Start an OAuth authentication flow for a supported provider.",
+                "description": "Start an OAuth authentication flow for a supported provider. Sets two short-lived HTTP-only cookies (OAuth state and session, 10 minutes) then redirects the browser (302) to the provider's consent page. The frontend must navigate to this URL directly (full page load), not via fetch, so cookies and redirects work.",
                 "produces": [
                     "application/json"
                 ],
@@ -330,24 +576,24 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "302": {
-                        "description": "Found"
+                        "description": "Redirect to the provider consent page."
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Unknown provider name (only google and github are supported).",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.OAuthProviderNotFoundResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Unable to start OAuth login or to build the provider URL.",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.OAuthStartErrorResponse"
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable",
+                        "description": "Provider credentials (CLIENT_ID_\u003cPROVIDER\u003e / CLIENT_SECRET_\u003cPROVIDER\u003e) are missing.",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.OAuthNotConfiguredResponse"
                         }
                     }
                 }
@@ -355,7 +601,7 @@ const docTemplate = `{
         },
         "/auth/{provider}/callback": {
             "get": {
-                "description": "Handle the provider callback, create or retrieve the local user, persist a session, and redirect to the dashboard.",
+                "description": "Handle the provider callback: verify the state cookie, exchange the authorization code, fetch the provider profile, then create or retrieve the local user (OAuth accounts are auto-confirmed, no email verification needed). Persists a 7-day session in the database, sets the HTTP-only session_id cookie, and redirects (302) to the frontend dashboard. On failure returns JSON instead of redirecting.",
                 "produces": [
                     "application/json"
                 ],
@@ -377,7 +623,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "OAuth state returned by the provider",
+                        "description": "OAuth state returned by the provider (must match the oauth_state_\u003cprovider\u003e cookie)",
                         "name": "state",
                         "in": "query",
                         "required": true
@@ -391,30 +637,30 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "302": {
-                        "description": "Found"
+                        "description": "Authenticated: redirect to the frontend dashboard with the session_id cookie set."
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "State mismatch, expired OAuth cookies, or provider returned no email address.",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.OAuthInvalidStateResponse"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Unknown provider name (only google and github are supported).",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.OAuthProviderNotFoundResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Local account creation, session persistence, or redirect target failed.",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.OAuthAccountErrorResponse"
                         }
                     },
                     "502": {
-                        "description": "Bad Gateway",
+                        "description": "Code exchange or profile fetch failed at the provider.",
                         "schema": {
-                            "$ref": "#/definitions/auth.OAuthErrorResponse"
+                            "$ref": "#/definitions/auth.OAuthAuthorizationFailedResponse"
                         }
                     }
                 }
@@ -422,7 +668,7 @@ const docTemplate = `{
         },
         "/confirm": {
             "get": {
-                "description": "Confirm a user account with the token sent by email.",
+                "description": "Confirm a user account with the single-use token sent by email (valid 24h). The token is consumed on success; already-confirmed accounts return \"already_confirmed\". No session is created: log in afterwards via POST /auth/login.",
                 "produces": [
                     "application/json"
                 ],
@@ -433,7 +679,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Email confirmation token",
+                        "description": "Email confirmation token from the confirmation link",
                         "name": "token",
                         "in": "query",
                         "required": true
@@ -441,31 +687,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Account confirmed (or already confirmed).",
                         "schema": {
                             "$ref": "#/definitions/auth.ConfirmedResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Missing token query parameter.",
                         "schema": {
                             "$ref": "#/definitions/auth.ConfirmBadRequestResponse"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Unknown or already-consumed token.",
                         "schema": {
                             "$ref": "#/definitions/auth.InvalidTokenResponse"
                         }
                     },
                     "410": {
-                        "description": "Gone",
+                        "description": "Token older than 24h (request a new one via POST /confirm/resend).",
                         "schema": {
                             "$ref": "#/definitions/auth.ExpiredResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Database error while confirming.",
                         "schema": {
                             "$ref": "#/definitions/auth.ConfirmErrorResponse"
                         }
@@ -475,7 +721,7 @@ const docTemplate = `{
         },
         "/confirm/resend": {
             "post": {
-                "description": "Send a new email confirmation token for an unconfirmed account.",
+                "description": "Rotate the confirmation token of an unconfirmed account and send a new confirmation email. Rate-limited to 3 requests per 15 minutes. Already-confirmed accounts return \"already_confirmed\".",
                 "consumes": [
                     "application/json"
                 ],
@@ -488,7 +734,7 @@ const docTemplate = `{
                 "summary": "Resend confirmation email",
                 "parameters": [
                     {
-                        "description": "Current confirmation token",
+                        "description": "Current (expired or lost) confirmation token",
                         "name": "token",
                         "in": "body",
                         "required": true,
@@ -499,31 +745,31 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "New confirmation email queued (or account already confirmed).",
                         "schema": {
                             "$ref": "#/definitions/auth.ResendSuccessResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Malformed JSON body or missing token.",
                         "schema": {
                             "$ref": "#/definitions/auth.ResendBadRequestResponse"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "No account matches this token (unknown or already consumed).",
                         "schema": {
                             "$ref": "#/definitions/auth.ResendNotFoundResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Database error while rotating the token.",
                         "schema": {
                             "$ref": "#/definitions/auth.ResendErrorResponse"
                         }
                     },
                     "503": {
-                        "description": "Service Unavailable",
+                        "description": "The database is not configured.",
                         "schema": {
                             "$ref": "#/definitions/auth.ResendUnavailableResponse"
                         }
@@ -640,7 +886,7 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "database error"
+                    "example": "Database error: unable to confirm the account."
                 },
                 "status": {
                     "type": "string",
@@ -697,7 +943,7 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "Invalid request body"
+                    "example": "Invalid request body: email and password are required."
                 },
                 "status": {
                     "type": "string",
@@ -725,7 +971,7 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "Server error"
+                    "example": "Server error: unable to process the login."
                 },
                 "status": {
                     "type": "string",
@@ -790,12 +1036,77 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.OAuthErrorResponse": {
+        "auth.OAuthAccountErrorResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "OAuth provider is not configured"
+                    "example": "Unable to create account."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "auth.OAuthAuthorizationFailedResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "OAuth authorization failed."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "auth.OAuthInvalidStateResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Invalid OAuth state. Restart the login from /auth/{provider}."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "auth.OAuthNotConfiguredResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "OAuth provider is not configured. Set CLIENT_ID_\u003cPROVIDER\u003e and CLIENT_SECRET_\u003cPROVIDER\u003e."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "auth.OAuthProviderNotFoundResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "OAuth provider not supported."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "auth.OAuthStartErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Unable to start OAuth login."
                 },
                 "status": {
                     "type": "string",
@@ -808,7 +1119,7 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "Invalid fields"
+                    "example": "Invalid fields: a valid email and a password of at least 8 characters are required."
                 },
                 "status": {
                     "type": "string",
@@ -850,7 +1161,7 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "Server error"
+                    "example": "Server error: unable to create the account."
                 },
                 "status": {
                     "type": "string",
@@ -898,7 +1209,7 @@ const docTemplate = `{
             "properties": {
                 "message": {
                     "type": "string",
-                    "example": "database error"
+                    "example": "Database error: unable to rotate the token."
                 },
                 "status": {
                     "type": "string",
@@ -949,6 +1260,32 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.SessionErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Unable to validate session."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "auth.SessionUnauthorizedResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Authentication required."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
         "main.HealthResponse": {
             "type": "object",
             "properties": {
@@ -964,6 +1301,36 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "dashboard API - see GET /about.json"
+                }
+            }
+        },
+        "widgets.CreateWidgetRequest": {
+            "type": "object",
+            "required": [
+                "position",
+                "refresh_rate_seconds",
+                "size",
+                "type"
+            ],
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "position": {
+                    "$ref": "#/definitions/widgets.WidgetPosition"
+                },
+                "refresh_rate_seconds": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "size": {
+                    "type": "string",
+                    "example": "big"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "sncf.departures"
                 }
             }
         },
@@ -1071,6 +1438,195 @@ const docTemplate = `{
             "properties": {
                 "text": {
                     "type": "string"
+                }
+            }
+        },
+        "widgets.UpdateWidgetRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "position": {
+                    "$ref": "#/definitions/widgets.WidgetPosition"
+                },
+                "refresh_rate_seconds": {
+                    "type": "integer",
+                    "example": 180
+                },
+                "size": {
+                    "type": "string",
+                    "example": "wide"
+                }
+            }
+        },
+        "widgets.WidgetBadRequestResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The request body must contain type, size, refresh_rate_seconds and position."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetConflictResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "This widget overlaps another widget."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetInstanceListResponse": {
+            "type": "object",
+            "properties": {
+                "widgets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.WidgetInstanceResponse"
+                    }
+                }
+            }
+        },
+        "widgets.WidgetInstanceNotFoundResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The requested widget does not exist."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetInstanceResponse": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "position": {
+                    "$ref": "#/definitions/widgets.WidgetPosition"
+                },
+                "refresh_rate_seconds": {
+                    "type": "integer",
+                    "example": 120
+                },
+                "size": {
+                    "type": "string",
+                    "example": "big"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "sncf.departures"
+                }
+            }
+        },
+        "widgets.WidgetInvalidIDResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The widget ID is invalid."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetPosition": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "y": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "widgets.WidgetServerErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Unable to create the widget."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetTypeNotFoundResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The requested widget type does not exist."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetUnauthorizedResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Authentication required."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetUnavailableResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The database is not configured."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.WidgetUnprocessableResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "This size is not available for this widget."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
                 }
             }
         }

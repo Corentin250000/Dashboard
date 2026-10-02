@@ -46,14 +46,14 @@ func ConfigureOAuth() {
 
 // OAuthStart redirects the browser to the selected provider.
 // @Summary Start OAuth authentication
-// @Description Start an OAuth authentication flow for a supported provider.
+// @Description Start an OAuth authentication flow for a supported provider. Sets two short-lived HTTP-only cookies (OAuth state and session, 10 minutes) then redirects the browser (302) to the provider's consent page. The frontend must navigate to this URL directly (full page load), not via fetch, so cookies and redirects work.
 // @Tags auth
 // @Produce json
 // @Param provider path string true "OAuth provider" Enums(google,github)
-// @Success 302
-// @Failure 404 {object} OAuthErrorResponse
-// @Failure 503 {object} OAuthErrorResponse
-// @Failure 500 {object} OAuthErrorResponse
+// @Success 302 "Redirect to the provider consent page."
+// @Failure 404 {object} OAuthProviderNotFoundResponse "Unknown provider name (only google and github are supported)."
+// @Failure 503 {object} OAuthNotConfiguredResponse "Provider credentials (CLIENT_ID_<PROVIDER> / CLIENT_SECRET_<PROVIDER>) are missing."
+// @Failure 500 {object} OAuthStartErrorResponse "Unable to start OAuth login or to build the provider URL."
 // @Router /auth/{provider} [get]
 func OAuthStart(c fiber.Ctx) error {
 	providerName := strings.ToLower(c.Params("provider"))
@@ -118,17 +118,17 @@ func OAuthStart(c fiber.Ctx) error {
 
 // OAuthCallback completes a Goth login and creates the local session.
 // @Summary Complete OAuth authentication
-// @Description Handle the provider callback, create or retrieve the local user, persist a session, and redirect to the dashboard.
+// @Description Handle the provider callback: verify the state cookie, exchange the authorization code, fetch the provider profile, then create or retrieve the local user (OAuth accounts are auto-confirmed, no email verification needed). Persists a 7-day session in the database, sets the HTTP-only session_id cookie, and redirects (302) to the frontend dashboard. On failure returns JSON instead of redirecting.
 // @Tags auth
 // @Produce json
 // @Param provider path string true "OAuth provider" Enums(google,github)
-// @Param state query string true "OAuth state returned by the provider"
+// @Param state query string true "OAuth state returned by the provider (must match the oauth_state_<provider> cookie)"
 // @Param code query string false "Authorization code returned by the provider"
-// @Success 302
-// @Failure 400 {object} OAuthErrorResponse
-// @Failure 404 {object} OAuthErrorResponse
-// @Failure 502 {object} OAuthErrorResponse
-// @Failure 500 {object} OAuthErrorResponse
+// @Success 302 "Authenticated: redirect to the frontend dashboard with the session_id cookie set."
+// @Failure 400 {object} OAuthInvalidStateResponse "State mismatch, expired OAuth cookies, or provider returned no email address."
+// @Failure 404 {object} OAuthProviderNotFoundResponse "Unknown provider name (only google and github are supported)."
+// @Failure 502 {object} OAuthAuthorizationFailedResponse "Code exchange or profile fetch failed at the provider."
+// @Failure 500 {object} OAuthAccountErrorResponse "Local account creation, session persistence, or redirect target failed."
 // @Router /auth/{provider}/callback [get]
 func OAuthCallback(c fiber.Ctx) error {
 	providerName := strings.ToLower(c.Params("provider"))

@@ -203,17 +203,17 @@ func getIdSncfStation(stationName string) (string, error) {
 
 // GetDepartures returns the next departures for a station.
 // @Summary SNCF departures
-// @Description Returns departure times, destinations, delays and cancellations for a station.
+// @Description Returns the next 10 departures (scheduled time, real time, destination, delay in minutes, cancellation flag) for a station. The station name is matched exactly against the SNCF stop_areas catalog. Public route: no authentication required.
 // @Tags SNCF
 // @Accept json
 // @Produce json
-// @Param station body TrainStationRequest true "Station name"
-// @Success 200 {object} SncfDeparturesResponse
-// @Failure 400 {object} SncfBadRequestResponse
-// @Failure 404 {object} SncfNotFoundResponse
-// @Failure 500 {object} SncfServerErrorResponse
-// @Failure 502 {object} SncfBadGatewayResponse
-// @Failure 503 {object} SncfUnavailableResponse
+// @Param station body TrainStationRequest true "Station name exactly as listed in the SNCF catalog (e.g. Paris Gare du Nord)"
+// @Success 200 {object} SncfDeparturesResponse "Up to 10 upcoming departures, earliest first."
+// @Failure 400 {object} SncfBadRequestResponse "Malformed JSON body or missing/empty text field."
+// @Failure 404 {object} SncfNotFoundResponse "No station with this exact name in the SNCF catalog."
+// @Failure 500 {object} SncfServerErrorResponse "Station lookup or SNCF request construction failed."
+// @Failure 502 {object} SncfBadGatewayResponse "SNCF API unreachable, non-2xx response, or invalid payload."
+// @Failure 503 {object} SncfUnavailableResponse "API_KEY_SNCF is not set on the server."
 // @Router /api/sncf/departures [post]
 func GetDepartures(c fiber.Ctx) error {
 	if db == nil {

@@ -18,16 +18,16 @@ type RegisterRequest struct {
 
 // Register creates a local account and sends an email confirmation token.
 // @Summary Register
-// @Description Create a user account. The account must be confirmed by email before login.
+// @Description Create a user account with email and password (minimum 8 characters). The account stays unconfirmed until the emailed token is validated via GET /confirm, and login is blocked meanwhile. No session is created here.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param credentials body RegisterRequest true "Registration credentials"
-// @Success 201 {object} RegisterSuccessResponse
-// @Failure 400 {object} RegisterBadRequestResponse
-// @Failure 409 {object} RegisterConflictResponse
-// @Failure 500 {object} RegisterServerErrorResponse
-// @Failure 503 {object} RegisterUnavailableResponse
+// @Param credentials body RegisterRequest true "Registration credentials (valid email + password of at least 8 characters)"
+// @Success 201 {object} RegisterSuccessResponse "Account created: check the inbox for the confirmation email."
+// @Failure 400 {object} RegisterBadRequestResponse "Malformed JSON body, invalid email format, or password shorter than 8 characters."
+// @Failure 409 {object} RegisterConflictResponse "This email address is already registered."
+// @Failure 500 {object} RegisterServerErrorResponse "Password hashing, token generation, or account creation failed."
+// @Failure 503 {object} RegisterUnavailableResponse "The database is not configured."
 // @Router /auth/register [post]
 func Register(c fiber.Ctx) error {
 	if db == nil {

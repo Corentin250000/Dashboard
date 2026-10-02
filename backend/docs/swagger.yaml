@@ -56,7 +56,7 @@ definitions:
   auth.ConfirmErrorResponse:
     properties:
       message:
-        example: database error
+        example: 'Database error: unable to confirm the account.'
         type: string
       status:
         example: error
@@ -95,7 +95,7 @@ definitions:
   auth.LoginBadRequestResponse:
     properties:
       message:
-        example: Invalid request body
+        example: 'Invalid request body: email and password are required.'
         type: string
       status:
         example: error
@@ -114,7 +114,7 @@ definitions:
   auth.LoginServerErrorResponse:
     properties:
       message:
-        example: Server error
+        example: 'Server error: unable to process the login.'
         type: string
       status:
         example: error
@@ -159,10 +159,55 @@ definitions:
         example: Logged out
         type: string
     type: object
-  auth.OAuthErrorResponse:
+  auth.OAuthAccountErrorResponse:
     properties:
       message:
-        example: OAuth provider is not configured
+        example: Unable to create account.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.OAuthAuthorizationFailedResponse:
+    properties:
+      message:
+        example: OAuth authorization failed.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.OAuthInvalidStateResponse:
+    properties:
+      message:
+        example: Invalid OAuth state. Restart the login from /auth/{provider}.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.OAuthNotConfiguredResponse:
+    properties:
+      message:
+        example: OAuth provider is not configured. Set CLIENT_ID_<PROVIDER> and CLIENT_SECRET_<PROVIDER>.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.OAuthProviderNotFoundResponse:
+    properties:
+      message:
+        example: OAuth provider not supported.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.OAuthStartErrorResponse:
+    properties:
+      message:
+        example: Unable to start OAuth login.
         type: string
       status:
         example: error
@@ -171,7 +216,8 @@ definitions:
   auth.RegisterBadRequestResponse:
     properties:
       message:
-        example: Invalid fields
+        example: 'Invalid fields: a valid email and a password of at least 8 characters
+          are required.'
         type: string
       status:
         example: error
@@ -200,7 +246,7 @@ definitions:
   auth.RegisterServerErrorResponse:
     properties:
       message:
-        example: Server error
+        example: 'Server error: unable to create the account.'
         type: string
       status:
         example: error
@@ -233,7 +279,7 @@ definitions:
   auth.ResendErrorResponse:
     properties:
       message:
-        example: database error
+        example: 'Database error: unable to rotate the token.'
         type: string
       status:
         example: error
@@ -268,6 +314,24 @@ definitions:
         example: error
         type: string
     type: object
+  auth.SessionErrorResponse:
+    properties:
+      message:
+        example: Unable to validate session.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.SessionUnauthorizedResponse:
+    properties:
+      message:
+        example: Authentication required.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
   main.HealthResponse:
     properties:
       status:
@@ -279,6 +343,28 @@ definitions:
       message:
         example: dashboard API - see GET /about.json
         type: string
+    type: object
+  widgets.CreateWidgetRequest:
+    properties:
+      config:
+        additionalProperties: {}
+        type: object
+      position:
+        $ref: '#/definitions/widgets.WidgetPosition'
+      refresh_rate_seconds:
+        example: 120
+        type: integer
+      size:
+        example: big
+        type: string
+      type:
+        example: sncf.departures
+        type: string
+    required:
+    - position
+    - refresh_rate_seconds
+    - size
+    - type
     type: object
   widgets.SncfBadGatewayResponse:
     properties:
@@ -352,6 +438,138 @@ definitions:
     required:
     - text
     type: object
+  widgets.UpdateWidgetRequest:
+    properties:
+      config:
+        additionalProperties: {}
+        type: object
+      position:
+        $ref: '#/definitions/widgets.WidgetPosition'
+      refresh_rate_seconds:
+        example: 180
+        type: integer
+      size:
+        example: wide
+        type: string
+    type: object
+  widgets.WidgetBadRequestResponse:
+    properties:
+      message:
+        example: The request body must contain type, size, refresh_rate_seconds and
+          position.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetConflictResponse:
+    properties:
+      message:
+        example: This widget overlaps another widget.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetInstanceListResponse:
+    properties:
+      widgets:
+        items:
+          $ref: '#/definitions/widgets.WidgetInstanceResponse'
+        type: array
+    type: object
+  widgets.WidgetInstanceNotFoundResponse:
+    properties:
+      message:
+        example: The requested widget does not exist.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetInstanceResponse:
+    properties:
+      config:
+        additionalProperties: {}
+        type: object
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      position:
+        $ref: '#/definitions/widgets.WidgetPosition'
+      refresh_rate_seconds:
+        example: 120
+        type: integer
+      size:
+        example: big
+        type: string
+      type:
+        example: sncf.departures
+        type: string
+    type: object
+  widgets.WidgetInvalidIDResponse:
+    properties:
+      message:
+        example: The widget ID is invalid.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetPosition:
+    properties:
+      x:
+        example: 2
+        type: integer
+      "y":
+        example: 1
+        type: integer
+    type: object
+  widgets.WidgetServerErrorResponse:
+    properties:
+      message:
+        example: Unable to create the widget.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetTypeNotFoundResponse:
+    properties:
+      message:
+        example: The requested widget type does not exist.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetUnauthorizedResponse:
+    properties:
+      message:
+        example: Authentication required.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetUnavailableResponse:
+    properties:
+      message:
+        example: The database is not configured.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.WidgetUnprocessableResponse:
+    properties:
+      message:
+        example: This size is not available for this widget.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
 host: 127.0.0.1:8080
 info:
   contact: {}
@@ -385,14 +603,195 @@ paths:
       summary: Service catalog
       tags:
       - system
+  /api/me/widgets:
+    get:
+      description: Return every widget instance placed on the dashboard of the current
+        user, ordered by creation date. Requires the session_id cookie.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The dashboard widgets of the current user.
+          schema:
+            $ref: '#/definitions/widgets.WidgetInstanceListResponse'
+        "401":
+          description: Missing, expired or invalid session cookie.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnauthorizedResponse'
+        "500":
+          description: Unable to load widgets.
+          schema:
+            $ref: '#/definitions/widgets.WidgetServerErrorResponse'
+        "503":
+          description: The database is not configured.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnavailableResponse'
+      summary: List dashboard widgets
+      tags:
+      - widgets
+    post:
+      consumes:
+      - application/json
+      description: Create a widget instance. The type must use the "service.widget"
+        format (e.g. "sncf.departures"), the size must be allowed for that widget,
+        the refresh rate must be at least 60 seconds, and the position is the zero-based
+        top-left cell on the 6x6 desktop grid. The new widget must fit inside the
+        grid without overlapping an existing widget.
+      parameters:
+      - description: Widget to create (type, size, config, refresh_rate_seconds, position)
+        in: body
+        name: widget
+        required: true
+        schema:
+          $ref: '#/definitions/widgets.CreateWidgetRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: The created widget instance.
+          schema:
+            $ref: '#/definitions/widgets.WidgetInstanceResponse'
+        "400":
+          description: Malformed JSON body or missing type, size, refresh_rate_seconds
+            or position.
+          schema:
+            $ref: '#/definitions/widgets.WidgetBadRequestResponse'
+        "401":
+          description: Missing, expired or invalid session cookie.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnauthorizedResponse'
+        "404":
+          description: Unknown widget type (unknown service, unknown widget, or malformed
+            type string).
+          schema:
+            $ref: '#/definitions/widgets.WidgetTypeNotFoundResponse'
+        "409":
+          description: The new widget overlaps another widget of the dashboard.
+          schema:
+            $ref: '#/definitions/widgets.WidgetConflictResponse'
+        "422":
+          description: Size not allowed for this widget, refresh rate below 60 seconds,
+            invalid config parameter, or position outside the 6x6 grid.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnprocessableResponse'
+        "500":
+          description: Unable to create the widget.
+          schema:
+            $ref: '#/definitions/widgets.WidgetServerErrorResponse'
+        "503":
+          description: The database is not configured.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnavailableResponse'
+      summary: Create a dashboard widget
+      tags:
+      - widgets
+  /api/me/widgets/{id}:
+    delete:
+      description: Delete a widget instance from the dashboard of the current user.
+        Only the instance is removed; the widget catalog entry and the other widgets
+        are untouched. Returns an empty body.
+      parameters:
+      - description: Widget instance ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: The widget was deleted (empty body).
+        "400":
+          description: The widget ID is not a valid UUID.
+          schema:
+            $ref: '#/definitions/widgets.WidgetInvalidIDResponse'
+        "401":
+          description: Missing, expired or invalid session cookie.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnauthorizedResponse'
+        "404":
+          description: No widget with this ID on the dashboard of the current user.
+          schema:
+            $ref: '#/definitions/widgets.WidgetInstanceNotFoundResponse'
+        "500":
+          description: Unable to delete the widget.
+          schema:
+            $ref: '#/definitions/widgets.WidgetServerErrorResponse'
+        "503":
+          description: The database is not configured.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnavailableResponse'
+      summary: Delete a dashboard widget
+      tags:
+      - widgets
+    patch:
+      consumes:
+      - application/json
+      description: 'Update any subset of size, config, refresh rate or position. Omitted
+        fields are left unchanged. The widget type cannot be changed. After applying
+        the patch, the whole dashboard layout is revalidated: the widget must fit
+        inside the 6x6 desktop grid without overlapping another widget.'
+      parameters:
+      - description: Widget instance ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update (only non-null fields are applied)
+        in: body
+        name: widget
+        required: true
+        schema:
+          $ref: '#/definitions/widgets.UpdateWidgetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The updated widget instance.
+          schema:
+            $ref: '#/definitions/widgets.WidgetInstanceResponse'
+        "400":
+          description: Malformed widget ID, malformed JSON body, or empty patch (no
+            updatable field provided).
+          schema:
+            $ref: '#/definitions/widgets.WidgetBadRequestResponse'
+        "401":
+          description: Missing, expired or invalid session cookie.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnauthorizedResponse'
+        "404":
+          description: No widget with this ID on the dashboard of the current user.
+          schema:
+            $ref: '#/definitions/widgets.WidgetInstanceNotFoundResponse'
+        "409":
+          description: The updated widget would overlap another widget of the dashboard.
+          schema:
+            $ref: '#/definitions/widgets.WidgetConflictResponse'
+        "422":
+          description: Size not allowed for this widget, refresh rate below 60 seconds,
+            invalid config parameter, or position outside the 6x6 grid.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnprocessableResponse'
+        "500":
+          description: Unable to update the widget.
+          schema:
+            $ref: '#/definitions/widgets.WidgetServerErrorResponse'
+        "503":
+          description: The database is not configured.
+          schema:
+            $ref: '#/definitions/widgets.WidgetUnavailableResponse'
+      summary: Update a dashboard widget
+      tags:
+      - widgets
   /api/sncf/departures:
     post:
       consumes:
       - application/json
-      description: Returns departure times, destinations, delays and cancellations
-        for a station.
+      description: 'Returns the next 10 departures (scheduled time, real time, destination,
+        delay in minutes, cancellation flag) for a station. The station name is matched
+        exactly against the SNCF stop_areas catalog. Public route: no authentication
+        required.'
       parameters:
-      - description: Station name
+      - description: Station name exactly as listed in the SNCF catalog (e.g. Paris
+          Gare du Nord)
         in: body
         name: station
         required: true
@@ -402,27 +801,27 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Up to 10 upcoming departures, earliest first.
           schema:
             $ref: '#/definitions/widgets.SncfDeparturesResponse'
         "400":
-          description: Bad Request
+          description: Malformed JSON body or missing/empty text field.
           schema:
             $ref: '#/definitions/widgets.SncfBadRequestResponse'
         "404":
-          description: Not Found
+          description: No station with this exact name in the SNCF catalog.
           schema:
             $ref: '#/definitions/widgets.SncfNotFoundResponse'
         "500":
-          description: Internal Server Error
+          description: Station lookup or SNCF request construction failed.
           schema:
             $ref: '#/definitions/widgets.SncfServerErrorResponse'
         "502":
-          description: Bad Gateway
+          description: SNCF API unreachable, non-2xx response, or invalid payload.
           schema:
             $ref: '#/definitions/widgets.SncfBadGatewayResponse'
         "503":
-          description: Service Unavailable
+          description: API_KEY_SNCF is not set on the server.
           schema:
             $ref: '#/definitions/widgets.SncfUnavailableResponse'
       summary: SNCF departures
@@ -430,7 +829,11 @@ paths:
       - SNCF
   /auth/{provider}:
     get:
-      description: Start an OAuth authentication flow for a supported provider.
+      description: Start an OAuth authentication flow for a supported provider. Sets
+        two short-lived HTTP-only cookies (OAuth state and session, 10 minutes) then
+        redirects the browser (302) to the provider's consent page. The frontend must
+        navigate to this URL directly (full page load), not via fetch, so cookies
+        and redirects work.
       parameters:
       - description: OAuth provider
         enum:
@@ -444,26 +847,31 @@ paths:
       - application/json
       responses:
         "302":
-          description: Found
+          description: Redirect to the provider consent page.
         "404":
-          description: Not Found
+          description: Unknown provider name (only google and github are supported).
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.OAuthProviderNotFoundResponse'
         "500":
-          description: Internal Server Error
+          description: Unable to start OAuth login or to build the provider URL.
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.OAuthStartErrorResponse'
         "503":
-          description: Service Unavailable
+          description: Provider credentials (CLIENT_ID_<PROVIDER> / CLIENT_SECRET_<PROVIDER>)
+            are missing.
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.OAuthNotConfiguredResponse'
       summary: Start OAuth authentication
       tags:
       - auth
   /auth/{provider}/callback:
     get:
-      description: Handle the provider callback, create or retrieve the local user,
-        persist a session, and redirect to the dashboard.
+      description: 'Handle the provider callback: verify the state cookie, exchange
+        the authorization code, fetch the provider profile, then create or retrieve
+        the local user (OAuth accounts are auto-confirmed, no email verification needed).
+        Persists a 7-day session in the database, sets the HTTP-only session_id cookie,
+        and redirects (302) to the frontend dashboard. On failure returns JSON instead
+        of redirecting.'
       parameters:
       - description: OAuth provider
         enum:
@@ -473,7 +881,8 @@ paths:
         name: provider
         required: true
         type: string
-      - description: OAuth state returned by the provider
+      - description: OAuth state returned by the provider (must match the oauth_state_<provider>
+          cookie)
         in: query
         name: state
         required: true
@@ -486,23 +895,26 @@ paths:
       - application/json
       responses:
         "302":
-          description: Found
+          description: 'Authenticated: redirect to the frontend dashboard with the
+            session_id cookie set.'
         "400":
-          description: Bad Request
+          description: State mismatch, expired OAuth cookies, or provider returned
+            no email address.
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.OAuthInvalidStateResponse'
         "404":
-          description: Not Found
+          description: Unknown provider name (only google and github are supported).
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.OAuthProviderNotFoundResponse'
         "500":
-          description: Internal Server Error
+          description: Local account creation, session persistence, or redirect target
+            failed.
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.OAuthAccountErrorResponse'
         "502":
-          description: Bad Gateway
+          description: Code exchange or profile fetch failed at the provider.
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.OAuthAuthorizationFailedResponse'
       summary: Complete OAuth authentication
       tags:
       - auth
@@ -510,9 +922,11 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticate a user with an email and password.
+      description: Authenticate a user with email and password. On success persists
+        a 7-day session in the database and sets the HTTP-only session_id cookie (SameSite
+        Lax). OAuth-only accounts (no local password) cannot use this route.
       parameters:
-      - description: Login credentials
+      - description: Login credentials (valid email + password)
         in: body
         name: credentials
         required: true
@@ -522,27 +936,28 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 'Authenticated: session cookie set.'
           schema:
             $ref: '#/definitions/auth.LoginSuccessResponse'
         "400":
-          description: Bad Request
+          description: Malformed JSON body, missing fields, or invalid email format.
           schema:
             $ref: '#/definitions/auth.LoginBadRequestResponse'
         "401":
-          description: Unauthorized
+          description: Unknown email, wrong password, or account without local password
+            (use OAuth instead).
           schema:
             $ref: '#/definitions/auth.LoginUnauthorizedResponse'
         "403":
-          description: Forbidden
+          description: Account created but email not confirmed yet (check /confirm).
           schema:
             $ref: '#/definitions/auth.LoginUnconfirmedResponse'
         "500":
-          description: Internal Server Error
+          description: Password comparison or session creation failed.
           schema:
             $ref: '#/definitions/auth.LoginServerErrorResponse'
         "503":
-          description: Service Unavailable
+          description: The database is not configured.
           schema:
             $ref: '#/definitions/auth.LoginUnavailableResponse'
       summary: Log in
@@ -550,43 +965,49 @@ paths:
       - auth
   /auth/logout:
     post:
-      description: Revoke the current authenticated browser session.
+      description: 'Delete the current session from the database and clear the HTTP-only
+        session_id cookie. Third-party service tokens (user_services) are kept: disconnecting
+        a service is a separate operation.'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: The session was revoked and the cookie cleared.
           schema:
             $ref: '#/definitions/auth.LogoutSuccessResponse'
         "401":
-          description: Unauthorized
+          description: Missing session cookie, or expired/invalid session (cookie
+            is cleared).
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.SessionUnauthorizedResponse'
         "500":
-          description: Internal Server Error
+          description: Unable to log out (database error).
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.SessionErrorResponse'
       summary: Log out
       tags:
       - auth
   /auth/me:
     get:
-      description: Return the account associated with the current browser session.
+      description: Return the id and email of the account associated with the current
+        browser session. Used by the frontend on page load to decide whether to show
+        "Log in" or "Log out". Requires the session_id cookie.
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: The id and email of the authenticated user.
           schema:
             $ref: '#/definitions/auth.CurrentUserResponse'
         "401":
-          description: Unauthorized
+          description: Missing session cookie, or expired/invalid session (cookie
+            is cleared).
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.SessionUnauthorizedResponse'
         "500":
-          description: Internal Server Error
+          description: Unable to validate session.
           schema:
-            $ref: '#/definitions/auth.OAuthErrorResponse'
+            $ref: '#/definitions/auth.SessionErrorResponse'
       summary: Current user
       tags:
       - auth
@@ -594,10 +1015,12 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a user account. The account must be confirmed by email before
-        login.
+      description: Create a user account with email and password (minimum 8 characters).
+        The account stays unconfirmed until the emailed token is validated via GET
+        /confirm, and login is blocked meanwhile. No session is created here.
       parameters:
-      - description: Registration credentials
+      - description: Registration credentials (valid email + password of at least
+          8 characters)
         in: body
         name: credentials
         required: true
@@ -607,23 +1030,24 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: 'Account created: check the inbox for the confirmation email.'
           schema:
             $ref: '#/definitions/auth.RegisterSuccessResponse'
         "400":
-          description: Bad Request
+          description: Malformed JSON body, invalid email format, or password shorter
+            than 8 characters.
           schema:
             $ref: '#/definitions/auth.RegisterBadRequestResponse'
         "409":
-          description: Conflict
+          description: This email address is already registered.
           schema:
             $ref: '#/definitions/auth.RegisterConflictResponse'
         "500":
-          description: Internal Server Error
+          description: Password hashing, token generation, or account creation failed.
           schema:
             $ref: '#/definitions/auth.RegisterServerErrorResponse'
         "503":
-          description: Service Unavailable
+          description: The database is not configured.
           schema:
             $ref: '#/definitions/auth.RegisterUnavailableResponse'
       summary: Register
@@ -631,9 +1055,12 @@ paths:
       - auth
   /confirm:
     get:
-      description: Confirm a user account with the token sent by email.
+      description: 'Confirm a user account with the single-use token sent by email
+        (valid 24h). The token is consumed on success; already-confirmed accounts
+        return "already_confirmed". No session is created: log in afterwards via POST
+        /auth/login.'
       parameters:
-      - description: Email confirmation token
+      - description: Email confirmation token from the confirmation link
         in: query
         name: token
         required: true
@@ -642,23 +1069,23 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Account confirmed (or already confirmed).
           schema:
             $ref: '#/definitions/auth.ConfirmedResponse'
         "400":
-          description: Bad Request
+          description: Missing token query parameter.
           schema:
             $ref: '#/definitions/auth.ConfirmBadRequestResponse'
         "404":
-          description: Not Found
+          description: Unknown or already-consumed token.
           schema:
             $ref: '#/definitions/auth.InvalidTokenResponse'
         "410":
-          description: Gone
+          description: Token older than 24h (request a new one via POST /confirm/resend).
           schema:
             $ref: '#/definitions/auth.ExpiredResponse'
         "500":
-          description: Internal Server Error
+          description: Database error while confirming.
           schema:
             $ref: '#/definitions/auth.ConfirmErrorResponse'
       summary: Confirm email
@@ -668,9 +1095,11 @@ paths:
     post:
       consumes:
       - application/json
-      description: Send a new email confirmation token for an unconfirmed account.
+      description: Rotate the confirmation token of an unconfirmed account and send
+        a new confirmation email. Rate-limited to 3 requests per 15 minutes. Already-confirmed
+        accounts return "already_confirmed".
       parameters:
-      - description: Current confirmation token
+      - description: Current (expired or lost) confirmation token
         in: body
         name: token
         required: true
@@ -680,23 +1109,23 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: New confirmation email queued (or account already confirmed).
           schema:
             $ref: '#/definitions/auth.ResendSuccessResponse'
         "400":
-          description: Bad Request
+          description: Malformed JSON body or missing token.
           schema:
             $ref: '#/definitions/auth.ResendBadRequestResponse'
         "404":
-          description: Not Found
+          description: No account matches this token (unknown or already consumed).
           schema:
             $ref: '#/definitions/auth.ResendNotFoundResponse'
         "500":
-          description: Internal Server Error
+          description: Database error while rotating the token.
           schema:
             $ref: '#/definitions/auth.ResendErrorResponse'
         "503":
-          description: Service Unavailable
+          description: The database is not configured.
           schema:
             $ref: '#/definitions/auth.ResendUnavailableResponse'
       summary: Resend confirmation email

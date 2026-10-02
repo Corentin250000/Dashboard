@@ -55,6 +55,9 @@ func main() {
 		log.Fatalf("failed to check SNCF stations: %v", err)
 	}
 	widgets.SetDB(database)
+	if err := widgets.SeedCatalog(database); err != nil {
+		log.Fatalf("widget catalog seed failed: %v", err)
+	}
 	if stationCount == 0 {
 		go func() {
 			if err := widgets.GetAllStations(database); err != nil {
@@ -112,13 +115,13 @@ func main() {
 	// SNCF data is public and does not require an authenticated session.
 	app.Post("/api/sncf/departures", widgets.GetDepartures)
 
-	// api := app.Group("/api", auth.RequireAuth)
+	api := app.Group("/api", auth.RequireAuth)
 
 	// Dashboard widget instances.
-	// api.Get("/me/widgets", widgets.ListWidgets)
-	// api.Post("/me/widgets", widgets.CreateWidget)
-	// api.Patch("/me/widgets/:id", widgets.UpdateWidget)
-	// api.Delete("/me/widgets/:id", widgets.DeleteWidget)
+	api.Get("/me/widgets", widgets.ListWidgets)
+	api.Post("/me/widgets", widgets.CreateWidget)
+	api.Patch("/me/widgets/:id", widgets.UpdateWidget)
+	api.Delete("/me/widgets/:id", widgets.DeleteWidget)
 
 	// Connected services.
 	// api.Get("/me/services", services.ListUserServices)

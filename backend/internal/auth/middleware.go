@@ -50,12 +50,12 @@ func CurrentUser(c fiber.Ctx) (*models.User, bool) {
 
 // Me returns the user attached to the current session.
 // @Summary Current user
-// @Description Return the account associated with the current browser session.
+// @Description Return the id and email of the account associated with the current browser session. Used by the frontend on page load to decide whether to show "Log in" or "Log out". Requires the session_id cookie.
 // @Tags auth
 // @Produce json
-// @Success 200 {object} CurrentUserResponse
-// @Failure 401 {object} OAuthErrorResponse
-// @Failure 500 {object} OAuthErrorResponse
+// @Success 200 {object} CurrentUserResponse "The id and email of the authenticated user."
+// @Failure 401 {object} SessionUnauthorizedResponse "Missing session cookie, or expired/invalid session (cookie is cleared)."
+// @Failure 500 {object} SessionErrorResponse "Unable to validate session."
 // @Router /auth/me [get]
 func Me(c fiber.Ctx) error {
 	user, ok := CurrentUser(c)
@@ -70,12 +70,12 @@ func Me(c fiber.Ctx) error {
 
 // Logout invalidates the current session and clears the browser cookie.
 // @Summary Log out
-// @Description Revoke the current authenticated browser session.
+// @Description Delete the current session from the database and clear the HTTP-only session_id cookie. Third-party service tokens (user_services) are kept: disconnecting a service is a separate operation.
 // @Tags auth
 // @Produce json
-// @Success 200 {object} LogoutSuccessResponse
-// @Failure 401 {object} OAuthErrorResponse
-// @Failure 500 {object} OAuthErrorResponse
+// @Success 200 {object} LogoutSuccessResponse "The session was revoked and the cookie cleared."
+// @Failure 401 {object} SessionUnauthorizedResponse "Missing session cookie, or expired/invalid session (cookie is cleared)."
+// @Failure 500 {object} SessionErrorResponse "Unable to log out (database error)."
 // @Router /auth/logout [post]
 func Logout(c fiber.Ctx) error {
 	if sessionID := c.Locals(sessionCookieName); sessionID != nil {

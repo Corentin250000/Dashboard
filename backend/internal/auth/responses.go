@@ -6,7 +6,7 @@ type LoginSuccessResponse struct {
 
 type LoginBadRequestResponse struct {
 	Status  string `json:"status" example:"error"`
-	Message string `json:"message" example:"Invalid request body"`
+	Message string `json:"message" example:"Invalid request body: email and password are required."`
 }
 
 type LoginUnauthorizedResponse struct {
@@ -31,7 +31,7 @@ type LoginUnavailableResponse struct {
 
 type LoginServerErrorResponse struct {
 	Status  string `json:"status" example:"error"`
-	Message string `json:"message" example:"Server error"`
+	Message string `json:"message" example:"Server error: unable to process the login."`
 }
 
 type LogoutSuccessResponse struct {
@@ -48,13 +48,78 @@ type OAuthErrorResponse struct {
 	Message string `json:"message" example:"OAuth provider is not configured"`
 }
 
+type SessionUnauthorizedResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Authentication required."`
+}
+
+type SessionExpiredResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Session expired or invalid."`
+}
+
+type SessionErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to validate session."`
+}
+
+type OAuthProviderNotFoundResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"OAuth provider not supported."`
+}
+
+type OAuthNotConfiguredResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"OAuth provider is not configured. Set CLIENT_ID_<PROVIDER> and CLIENT_SECRET_<PROVIDER>."`
+}
+
+type OAuthStartErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to start OAuth login."`
+}
+
+type OAuthInvalidStateResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Invalid OAuth state. Restart the login from /auth/{provider}."`
+}
+
+type OAuthSessionExpiredResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"OAuth session expired. Restart the login from /auth/{provider}."`
+}
+
+type OAuthAuthorizationFailedResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"OAuth authorization failed."`
+}
+
+type OAuthProfileErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to fetch OAuth profile."`
+}
+
+type OAuthNoEmailResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"OAuth provider did not return an email."`
+}
+
+type OAuthAccountErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to create account."`
+}
+
+type OAuthSessionCreateErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to create session."`
+}
+
 type RegisterSuccessResponse struct {
 	Message string `json:"message" example:"Account created, please check your email"`
 }
 
 type RegisterBadRequestResponse struct {
 	Status  string `json:"status" example:"error"`
-	Message string `json:"message" example:"Invalid fields"`
+	Message string `json:"message" example:"Invalid fields: a valid email and a password of at least 8 characters are required."`
 }
 
 type RegisterConflictResponse struct {
@@ -64,7 +129,7 @@ type RegisterConflictResponse struct {
 
 type RegisterServerErrorResponse struct {
 	Status  string `json:"status" example:"error"`
-	Message string `json:"message" example:"Server error"`
+	Message string `json:"message" example:"Server error: unable to create the account."`
 }
 
 type RegisterUnavailableResponse struct {
@@ -91,7 +156,7 @@ type InvalidTokenResponse struct {
 
 type ConfirmErrorResponse struct {
 	Status  string `json:"status" example:"error"`
-	Message string `json:"message" example:"database error"`
+	Message string `json:"message" example:"Database error: unable to confirm the account."`
 }
 
 type ConfirmBadRequestResponse struct {
@@ -115,7 +180,7 @@ type ResendNotFoundResponse struct {
 
 type ResendErrorResponse struct {
 	Status  string `json:"status" example:"error"`
-	Message string `json:"message" example:"database error"`
+	Message string `json:"message" example:"Database error: unable to rotate the token."`
 }
 
 type ResendUnavailableResponse struct {

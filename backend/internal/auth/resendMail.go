@@ -17,16 +17,16 @@ type ResendRequest struct {
 
 // ResendConfirmationHandler rotates a confirmation token and sends it again.
 // @Summary Resend confirmation email
-// @Description Send a new email confirmation token for an unconfirmed account.
+// @Description Rotate the confirmation token of an unconfirmed account and send a new confirmation email. Rate-limited to 3 requests per 15 minutes. Already-confirmed accounts return "already_confirmed".
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param token body ResendRequest true "Current confirmation token"
-// @Success 200 {object} ResendSuccessResponse
-// @Failure 400 {object} ResendBadRequestResponse
-// @Failure 404 {object} ResendNotFoundResponse
-// @Failure 500 {object} ResendErrorResponse
-// @Failure 503 {object} ResendUnavailableResponse
+// @Param token body ResendRequest true "Current (expired or lost) confirmation token"
+// @Success 200 {object} ResendSuccessResponse "New confirmation email queued (or account already confirmed)."
+// @Failure 400 {object} ResendBadRequestResponse "Malformed JSON body or missing token."
+// @Failure 404 {object} ResendNotFoundResponse "No account matches this token (unknown or already consumed)."
+// @Failure 500 {object} ResendErrorResponse "Database error while rotating the token."
+// @Failure 503 {object} ResendUnavailableResponse "The database is not configured."
 // @Router /confirm/resend [post]
 func ResendConfirmationHandler(c fiber.Ctx) error {
 	if db == nil {

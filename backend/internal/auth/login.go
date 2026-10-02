@@ -16,17 +16,17 @@ type LoginRequest struct {
 
 // Login authenticates a confirmed local account and sets its session cookie.
 // @Summary Log in
-// @Description Authenticate a user with an email and password.
+// @Description Authenticate a user with email and password. On success persists a 7-day session in the database and sets the HTTP-only session_id cookie (SameSite Lax). OAuth-only accounts (no local password) cannot use this route.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param credentials body LoginRequest true "Login credentials"
-// @Success 200 {object} LoginSuccessResponse
-// @Failure 400 {object} LoginBadRequestResponse
-// @Failure 401 {object} LoginUnauthorizedResponse
-// @Failure 403 {object} LoginUnconfirmedResponse
-// @Failure 500 {object} LoginServerErrorResponse
-// @Failure 503 {object} LoginUnavailableResponse
+// @Param credentials body LoginRequest true "Login credentials (valid email + password)"
+// @Success 200 {object} LoginSuccessResponse "Authenticated: session cookie set."
+// @Failure 400 {object} LoginBadRequestResponse "Malformed JSON body, missing fields, or invalid email format."
+// @Failure 401 {object} LoginUnauthorizedResponse "Unknown email, wrong password, or account without local password (use OAuth instead)."
+// @Failure 403 {object} LoginUnconfirmedResponse "Account created but email not confirmed yet (check /confirm)."
+// @Failure 500 {object} LoginServerErrorResponse "Password comparison or session creation failed."
+// @Failure 503 {object} LoginUnavailableResponse "The database is not configured."
 // @Router /auth/login [post]
 func Login(c fiber.Ctx) error {
 	if db == nil {
