@@ -18,13 +18,18 @@ export type SncfDeparture = {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
+    ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
     credentials: 'include',
-    ...options,
   });
 
   if (!response.ok) {
-    throw new ApiError(`Error ${response.status}`, response.status);
+    let message = `Error ${response.status}`;
+    try {
+      const body = await response.json();
+      if (typeof body.error === 'string') message = body.error;
+    } catch {}
+    throw new ApiError(message, response.status);
   }
   return response.json();
 }
