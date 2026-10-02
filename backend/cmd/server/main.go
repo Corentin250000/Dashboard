@@ -92,6 +92,7 @@ func main() {
 	app.Add(getHead, "/", handleRoot)
 	app.Post("/auth/register", auth.Register)
 	app.Post("/auth/login", auth.Login)
+	app.Post("/auth/logout", auth.RequireAuth, auth.Logout)
 	app.Get("/confirm", auth.ConfirmHandler)
 	app.Post("/confirm/resend", limiter.New(limiter.Config{
 		Max:        3,
@@ -101,7 +102,8 @@ func main() {
 		URL:   "/docs/swagger/doc.json",
 		Title: "Dashboard API Reference",
 	}))
-	app.Post("/api/sncf/departures", widgets.GetDepartures)
+	api := app.Group("/api", auth.RequireAuth)
+	api.Post("/sncf/departures", widgets.GetDepartures)
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 	})

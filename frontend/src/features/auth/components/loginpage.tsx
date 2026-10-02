@@ -19,8 +19,7 @@ function LoginPage() {
     }
 
     api.login(email, password)
-      .then(data => {
-        localStorage.setItem('token', data.token);
+      .then(() => {
         navigate('/dashboard');
       })
       .catch(error => setErrorMessage(error.message))

@@ -90,12 +90,12 @@ func Login(c fiber.Ctx) error {
 	}
 
 	c.Cookie(&fiber.Cookie{
-		Name:     "session_id",
+		Name:     sessionCookieName,
 		Value:    sessionID,
 		HTTPOnly: true,
 		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
-		Expires:  time.Now().Add(7 * 24 * time.Hour),
+		Expires:  time.Now().Add(sessionLifetime),
 	})
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{

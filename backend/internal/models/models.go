@@ -23,6 +23,17 @@ type User struct {
 
 func (User) TableName() string { return "users" }
 
+// Session is an opaque, persistent browser session.
+type Session struct {
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;index"`
+	User      User      `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	ExpiresAt time.Time `gorm:"type:timestamptz;not null;index"`
+	CreatedAt time.Time `gorm:"type:timestamptz;not null;default:now()"`
+}
+
+func (Session) TableName() string { return "sessions" }
+
 /*
 Service is one row of the static service catalog (weather, github, rss...).
 AuthType drives which user_services columns get filled:
@@ -127,6 +138,7 @@ func (WidgetInstance) TableName() string { return "widget_instances" }
 func All() []any {
 	return []any{
 		&User{},
+		&Session{},
 		&Service{},
 		&SncfStation{},
 		&UserService{},

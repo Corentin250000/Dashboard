@@ -15,6 +15,7 @@ for UUID generation).
 | Table | Role |
 |---|---|
 | `users` | Platform accounts. `password_hash` is NULL for OAuth-only users. Login is blocked while `is_confirmed` is false; `confirmation_token` is single-use (NULL once consumed) with `confirmation_expires_at`. |
+| `sessions` | Persistent HTTP-only browser sessions. The UUID is stored in the `session_id` cookie and links to one user until `expires_at`. |
 | `services` | Static catalog of available services (weather, github, steam, rss…). `name` is the technical identifier. `auth_type` decides how users subscribe (see below); the `oauth_*` columns hold the app-level OAuth client config, one row per service. |
 | `user_services` | One row per (user, service) subscription (`UNIQUE`). Holds per-user credentials: cleartext username + encrypted password for `credentials` services, encrypted tokens + expiry for `oauth2` services. |
 | `widgets` | Per-service widget catalog. `UNIQUE (service_id, name)`. |
