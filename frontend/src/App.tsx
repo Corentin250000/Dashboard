@@ -17,9 +17,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/pending-verification" element={<PendingVerification />} />
         <Route path="/confirm" element={<VerifyEmailPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-
         <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/subscription" element={<SubscriptionPage />} />
         </Route>
 

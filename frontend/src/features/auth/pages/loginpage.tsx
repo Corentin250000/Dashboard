@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../shared/api';
 import AuthCard from '../components/authCard';
-import { setToken } from '../components/session';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -20,8 +19,7 @@ function LoginPage() {
     }
 
     api.login(email, password)
-      .then(data => {
-        setToken(data.token);
+      .then(() => {
         navigate('/dashboard');
       })
       .catch(error => setErrorMessage(error.message));
