@@ -45,6 +45,16 @@ func ConfigureOAuth() {
 }
 
 // OAuthStart redirects the browser to the selected provider.
+// @Summary Start OAuth authentication
+// @Description Start an OAuth authentication flow for a supported provider.
+// @Tags auth
+// @Produce json
+// @Param provider path string true "OAuth provider" Enums(google,github)
+// @Success 302
+// @Failure 404 {object} OAuthErrorResponse
+// @Failure 503 {object} OAuthErrorResponse
+// @Failure 500 {object} OAuthErrorResponse
+// @Router /auth/{provider} [get]
 func OAuthStart(c fiber.Ctx) error {
 	providerName := strings.ToLower(c.Params("provider"))
 	provider, err := goth.GetProvider(providerName)
@@ -107,6 +117,19 @@ func OAuthStart(c fiber.Ctx) error {
 }
 
 // OAuthCallback completes a Goth login and creates the local session.
+// @Summary Complete OAuth authentication
+// @Description Handle the provider callback, create or retrieve the local user, persist a session, and redirect to the dashboard.
+// @Tags auth
+// @Produce json
+// @Param provider path string true "OAuth provider" Enums(google,github)
+// @Param state query string true "OAuth state returned by the provider"
+// @Param code query string false "Authorization code returned by the provider"
+// @Success 302
+// @Failure 400 {object} OAuthErrorResponse
+// @Failure 404 {object} OAuthErrorResponse
+// @Failure 502 {object} OAuthErrorResponse
+// @Failure 500 {object} OAuthErrorResponse
+// @Router /auth/{provider}/callback [get]
 func OAuthCallback(c fiber.Ctx) error {
 	providerName := strings.ToLower(c.Params("provider"))
 	provider, err := goth.GetProvider(providerName)
@@ -161,7 +184,7 @@ func OAuthCallback(c fiber.Ctx) error {
 
 func providerConfigured(providerName string) bool {
 	key := strings.ToUpper(providerName)
-	return utils.GetEnv("CLIENT_ID_" + key, "") != "" && utils.GetEnv("CLIENT_SECRET_" + key, "") != ""
+	return utils.GetEnv("CLIENT_ID_"+key, "") != "" && utils.GetEnv("CLIENT_SECRET_"+key, "") != ""
 }
 
 func findOrCreateOAuthUser(email string) (models.User, error) {
@@ -187,12 +210,12 @@ func setSessionCookie(c fiber.Ctx, userID uuid.UUID) error {
 		return err
 	}
 	c.Cookie(&fiber.Cookie{
-		Name:     "session_id",
+		Name:     sessionCookieName,
 		Value:    sessionID,
 		HTTPOnly: true,
 		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
-		Expires:  time.Now().Add(7 * 24 * time.Hour),
+		Expires:  time.Now().Add(sessionLifetime),
 	})
 	return nil
 }

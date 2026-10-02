@@ -68,6 +68,15 @@ definitions:
         example: confirmed
         type: string
     type: object
+  auth.CurrentUserResponse:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
   auth.ExpiredResponse:
     properties:
       status:
@@ -139,6 +148,21 @@ definitions:
     properties:
       message:
         example: Account not confirmed, please check your email
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  auth.LogoutSuccessResponse:
+    properties:
+      message:
+        example: Logged out
+        type: string
+    type: object
+  auth.OAuthErrorResponse:
+    properties:
+      message:
+        example: OAuth provider is not configured
         type: string
       status:
         example: error
@@ -404,6 +428,84 @@ paths:
       summary: SNCF departures
       tags:
       - SNCF
+  /auth/{provider}:
+    get:
+      description: Start an OAuth authentication flow for a supported provider.
+      parameters:
+      - description: OAuth provider
+        enum:
+        - google
+        - github
+        in: path
+        name: provider
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+      summary: Start OAuth authentication
+      tags:
+      - auth
+  /auth/{provider}/callback:
+    get:
+      description: Handle the provider callback, create or retrieve the local user,
+        persist a session, and redirect to the dashboard.
+      parameters:
+      - description: OAuth provider
+        enum:
+        - google
+        - github
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: OAuth state returned by the provider
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: Authorization code returned by the provider
+        in: query
+        name: code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+      summary: Complete OAuth authentication
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -444,6 +546,48 @@ paths:
           schema:
             $ref: '#/definitions/auth.LoginUnavailableResponse'
       summary: Log in
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Revoke the current authenticated browser session.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LogoutSuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+      summary: Log out
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Return the account associated with the current browser session.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.CurrentUserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/auth.OAuthErrorResponse'
+      summary: Current user
       tags:
       - auth
   /auth/register:

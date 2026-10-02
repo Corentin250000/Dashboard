@@ -34,6 +34,20 @@ type LoginServerErrorResponse struct {
 	Message string `json:"message" example:"Server error"`
 }
 
+type LogoutSuccessResponse struct {
+	Message string `json:"message" example:"Logged out"`
+}
+
+type CurrentUserResponse struct {
+	ID    string `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	Email string `json:"email" example:"user@example.com"`
+}
+
+type OAuthErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"OAuth provider is not configured"`
+}
+
 type RegisterSuccessResponse struct {
 	Message string `json:"message" example:"Account created, please check your email"`
 }

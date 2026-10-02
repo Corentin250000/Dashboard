@@ -48,7 +48,35 @@ func CurrentUser(c fiber.Ctx) (*models.User, bool) {
 	return user, ok
 }
 
+// Me returns the user attached to the current session.
+// @Summary Current user
+// @Description Return the account associated with the current browser session.
+// @Tags auth
+// @Produce json
+// @Success 200 {object} CurrentUserResponse
+// @Failure 401 {object} OAuthErrorResponse
+// @Failure 500 {object} OAuthErrorResponse
+// @Router /auth/me [get]
+func Me(c fiber.Ctx) error {
+	user, ok := CurrentUser(c)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Authenticated user not available",
+		})
+	}
+	return c.JSON(CurrentUserResponse{ID: user.ID.String(), Email: user.Email})
+}
+
 // Logout invalidates the current session and clears the browser cookie.
+// @Summary Log out
+// @Description Revoke the current authenticated browser session.
+// @Tags auth
+// @Produce json
+// @Success 200 {object} LogoutSuccessResponse
+// @Failure 401 {object} OAuthErrorResponse
+// @Failure 500 {object} OAuthErrorResponse
+// @Router /auth/logout [post]
 func Logout(c fiber.Ctx) error {
 	if sessionID := c.Locals(sessionCookieName); sessionID != nil {
 		if err := deleteSession(sessionID.(string)); err != nil {
