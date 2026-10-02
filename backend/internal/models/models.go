@@ -99,6 +99,25 @@ type Widget struct {
 
 func (Widget) TableName() string { return "widgets" }
 
+// WidgetSize is a fixed size expressed in cells of the dashboard's 6x6 grid.
+type WidgetSize struct {
+	Code   string `gorm:"size:16;primaryKey"`
+	Width  int    `gorm:"not null;check:width > 0 AND width <= 6"`
+	Height int    `gorm:"not null;check:height > 0 AND height <= 6"`
+}
+
+func (WidgetSize) TableName() string { return "widget_sizes" }
+
+// WidgetAllowedSize links a catalog widget to one of its supported sizes.
+type WidgetAllowedSize struct {
+	WidgetID uuid.UUID  `gorm:"type:uuid;primaryKey"`
+	Widget   Widget     `gorm:"foreignKey:WidgetID;constraint:OnDelete:CASCADE"`
+	SizeCode string     `gorm:"size:16;primaryKey"`
+	Size     WidgetSize `gorm:"foreignKey:SizeCode;references:Code"`
+}
+
+func (WidgetAllowedSize) TableName() string { return "widget_allowed_sizes" }
+
 // WidgetParam is one configurable parameter of a catalog widget.
 type WidgetParam struct {
 	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
@@ -123,9 +142,11 @@ type WidgetInstance struct {
 	WidgetID           uuid.UUID      `gorm:"type:uuid;not null;index"`
 	Widget             Widget         `gorm:"foreignKey:WidgetID;constraint:OnDelete:CASCADE"`
 	Config             map[string]any `gorm:"type:jsonb;serializer:json;not null;default:'{}'"`
+	SizeCode           string         `gorm:"size:16;not null;default:small;index"`
+	Size               WidgetSize     `gorm:"foreignKey:SizeCode;references:Code"`
 	RefreshRateSeconds int            `gorm:"not null;check:refresh_rate_seconds > 0"`
-	PositionX          int            `gorm:"not null;default:0"`
-	PositionY          int            `gorm:"not null;default:0"`
+	PositionX          int            `gorm:"not null;default:0;check:position_x >= 0 AND position_x < 6"`
+	PositionY          int            `gorm:"not null;default:0;check:position_y >= 0 AND position_y < 6"`
 	LastRefreshedAt    *time.Time     `gorm:"type:timestamptz;index"`
 	CachedData         map[string]any `gorm:"type:jsonb;serializer:json"`
 	CreatedAt          time.Time      `gorm:"type:timestamptz;not null;default:now()"`
@@ -143,6 +164,8 @@ func All() []any {
 		&SncfStation{},
 		&UserService{},
 		&Widget{},
+		&WidgetSize{},
+		&WidgetAllowedSize{},
 		&WidgetParam{},
 		&WidgetInstance{},
 	}

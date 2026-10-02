@@ -46,6 +46,9 @@ func main() {
 	if err := models.AutoMigrate(database); err != nil {
 		log.Fatalf("database migration failed: %v", err)
 	}
+	if err := models.SeedWidgetSizes(database); err != nil {
+		log.Fatalf("widget size seed failed: %v", err)
+	}
 
 	var stationCount int64
 	if err := database.Model(&models.SncfStation{}).Count(&stationCount).Error; err != nil {
@@ -106,8 +109,26 @@ func main() {
 		URL:   "/docs/swagger/doc.json",
 		Title: "Dashboard API Reference",
 	}))
-	api := app.Group("/api", auth.RequireAuth)
-	api.Post("/sncf/departures", widgets.GetDepartures)
+	// SNCF data is public and does not require an authenticated session.
+	app.Post("/api/sncf/departures", widgets.GetDepartures)
+
+	// api := app.Group("/api", auth.RequireAuth)
+
+	// Dashboard widget instances.
+	// api.Get("/me/widgets", widgets.ListWidgets)
+	// api.Post("/me/widgets", widgets.CreateWidget)
+	// api.Patch("/me/widgets/:id", widgets.UpdateWidget)
+	// api.Delete("/me/widgets/:id", widgets.DeleteWidget)
+
+	// Connected services.
+	// api.Get("/me/services", services.ListUserServices)
+	// api.Get("/me/services/:service/connect", services.StartOAuth)
+	// api.Get("/me/services/:service/callback", services.OAuthCallback)
+	// api.Delete("/me/services/:service/connection", services.Disconnect)
+
+	// Account.
+	// api.Delete("/me/account", auth.DeleteAccount)
+
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 	})
