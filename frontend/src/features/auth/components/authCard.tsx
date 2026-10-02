@@ -11,13 +11,13 @@ export default function AuthCard({ title, children }: AuthCardProps) {
           w-full
           max-w-sm
           rounded-xl
-          bg-[var(--background)]
+          bg-(--background)
           border
-          border-[var(--border)]
+          border-(--border)
           p-8
         "
       >
-        <h1 className="mb-7 text-[22px] font-medium text-[var(--text-primary)]">
+        <h1 className="mb-7 text-[22px] font-medium text-(--text-secondary)">
           {title}
         </h1>
 

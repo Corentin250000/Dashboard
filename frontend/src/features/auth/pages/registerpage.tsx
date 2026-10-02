@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../shared/api';
 import AuthCard from '../components/authCard';
+import { setToken } from '../components/session';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -20,7 +21,7 @@ function RegisterPage() {
 
     api.register(email, password)
       .then(data => {
-        localStorage.setItem('token', data.token);
+        setToken(data.token);
         navigate('/pending-verification');
       })
       .catch(error => setErrorMessage(error.message));
@@ -30,7 +31,7 @@ function RegisterPage() {
     <AuthCard title="Sign up">
       <form onSubmit={handleSubmit}>
         <div className="mb-4 flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-[13px] text-[var(--text-primary)]">
+          <label htmlFor="email" className="text-[13px] text-(--text-primary)">
             Email
           </label>
           <input
@@ -41,17 +42,17 @@ function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Your email"
             className="
-              rounded-lg border border-[var(--border)] bg-[var(--card)]
-              px-3 py-2.5 text-[15px] text-[var(--text-primary)]
+              rounded-lg border border-(--border) bg-(--card)
+              px-3 py-2.5 text-[15px] text-(--text-primary)
               outline-none transition
-              focus-visible:border-[var(--accent)]
-              focus-visible:ring-2 focus-visible:ring-[var(--accent)]
+              focus-visible:border-(--accent)
+              focus-visible:ring-2 focus-visible:ring-(--accent)
             "
           />
         </div>
 
         <div className="mb-4 flex flex-col gap-1.5">
-          <label htmlFor="password" className="text-[13px] text-[var(--text-primary)]">
+          <label htmlFor="password" className="text-[13px] text-(--text-primary)">
             Password
           </label>
           <input
@@ -62,11 +63,11 @@ function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"
             className="
-              rounded-lg border border-[var(--border)] bg-[var(--card)]
-              px-3 py-2.5 text-[15px] text-[var(--text-primary)]
+              rounded-lg border border-(--border) bg-(--card)
+              px-3 py-2.5 text-[15px] text-(--text-primary)
               outline-none transition
-              focus-visible:border-[var(--accent)]
-              focus-visible:ring-2 focus-visible:ring-[var(--accent)]
+              focus-visible:border-(--accent)
+              focus-visible:ring-2 focus-visible:ring-(--accent)
             "
           />
         </div>
@@ -74,8 +75,8 @@ function RegisterPage() {
         <button
           type="submit"
           className="
-            mt-2 w-full rounded-lg bg-[var(--accent)] px-3 py-3
-            text-[15px] font-medium text-[var(--text-on-accent)]
+            mt-2 w-full rounded-lg bg-(--accent) px-3 py-3
+            text-[15px] font-medium text-(--text-primary)
             transition hover:opacity-90
           "
         >
@@ -83,15 +84,15 @@ function RegisterPage() {
         </button>
 
         {errorMessage && (
-          <p role="alert" className="mt-3 text-[15px] font-medium text-[var(--accent-secondary)]">
+          <p role="alert" className="mt-3 text-[15px] font-medium text-(--accent-secondary)">
             {errorMessage}
           </p>
         )}
       </form>
 
-      <p className="mt-5 text-center text-sm text-[var(--text-secondary)]">
+      <p className="mt-5 text-center text-sm text-(--text-secondary)">
         Already have an account?{' '}
-        <Link className="text-[var(--accent)] no-underline hover:underline" to="/register">
+        <Link className="text-(--accent) no-underline hover:underline" to="/register">
           Log in
         </Link>
       </p>
