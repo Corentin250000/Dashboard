@@ -161,7 +161,7 @@ func OAuthCallback(c fiber.Ctx) error {
 
 func providerConfigured(providerName string) bool {
 	key := strings.ToUpper(providerName)
-	return utils.GetEnv("CLIENT_ID_"+key, "") != "" && utils.GetEnv("CLIENT_SECRET_"+key, "") != ""
+	return utils.GetEnv("CLIENT_ID_" + key, "") != "" && utils.GetEnv("CLIENT_SECRET_" + key, "") != ""
 }
 
 func findOrCreateOAuthUser(email string) (models.User, error) {
