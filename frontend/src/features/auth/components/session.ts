@@ -1,10 +1,11 @@
-const TOKEN_KEY = 'token';
+import { ApiError, api } from '../../shared/api';
 
-export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY);
-
-export const setToken = (token: string): void =>
-  localStorage.setItem(TOKEN_KEY, token);
-
-export const clearToken = (): void => localStorage.removeItem(TOKEN_KEY);
-
-export const isAuthenticated = (): boolean => getToken() !== null;
+export const isAuthenticated = async (): Promise<boolean> => {
+  try {
+    await api.me();
+    return true;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return false;
+    throw error;
+  }
+};

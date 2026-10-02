@@ -28,6 +28,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     try {
       const body = await response.json();
       if (typeof body.error === 'string') message = body.error;
+      else if (typeof body.message === 'string') message = body.message;
     } catch {}
     throw new ApiError(message, response.status);
   }
@@ -36,17 +37,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
     login: (email: string, password: string) =>
-        request<{ token: string }>('/auth/login',
+        request<{ message: string }>('/auth/login',
           {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           }),
     register: (email: string, password: string) =>
-        request<{ token: string }>('/auth/register',
+        request<{ message: string }>('/auth/register',
           {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           }),
+    me: () => request<Record<string, unknown>>('/auth/me', { method: 'GET' }),
     confirmEmail: (token: string) =>
         request<{ status: 'confirmed' | 'already_confirmed' | 'expired' | 'invalid' }>(
             `/confirm?token=${encodeURIComponent(token)}`,

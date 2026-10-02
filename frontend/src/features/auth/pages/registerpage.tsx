@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../shared/api';
 import AuthCard from '../components/authCard';
-import { setToken } from '../components/session';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -20,8 +19,7 @@ function RegisterPage() {
     }
 
     api.register(email, password)
-      .then(data => {
-        setToken(data.token);
+      .then(() => {
         navigate('/pending-verification');
       })
       .catch(error => setErrorMessage(error.message));
@@ -92,7 +90,7 @@ function RegisterPage() {
 
       <p className="mt-5 text-center text-sm text-(--text-secondary)">
         Already have an account?{' '}
-        <Link className="text-(--accent) no-underline hover:underline" to="/register">
+        <Link className="text-(--accent) no-underline hover:underline" to="/login">
           Log in
         </Link>
       </p>
