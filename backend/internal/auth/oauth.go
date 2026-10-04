@@ -16,6 +16,8 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
+	"github.com/markbates/goth/providers/spotify"
+	"github.com/markbates/goth/providers/steam"
 	"gorm.io/gorm"
 )
 
@@ -26,21 +28,39 @@ const (
 
 // ConfigureOAuth registers the providers supported directly by Goth.
 func ConfigureOAuth() {
+	googleProvider := google.New(
+		utils.GetEnv("CLIENT_ID_GOOGLE", ""),
+		utils.GetEnv("CLIENT_SECRET_GOOGLE", ""),
+		"http://127.0.0.1:8080/auth/google/callback",
+		"openid",
+		"profile",
+		"email",
+	)
+	githubProvider := github.New(
+		utils.GetEnv("CLIENT_ID_GITHUB", ""),
+		utils.GetEnv("CLIENT_SECRET_GITHUB", ""),
+		"http://127.0.0.1:8080/auth/github/callback",
+		"user:email",
+	)
+	serviceSpotifyProvider := spotify.New(
+		utils.GetEnv("CLIENT_ID_SPOTIFY", ""),
+		utils.GetEnv("CLIENT_SECRET_SPOTIFY", ""),
+		"http://127.0.0.1:8080/api/me/services/spotify/callback",
+		spotify.ScopeUserReadPrivate,
+		spotify.ScopeUserReadEmail,
+	)
+	serviceSpotifyProvider.SetName("service_spotify")
+	serviceSteamProvider := steam.New(
+		utils.GetEnv("API_KEY_STEAM", ""),
+		"http://127.0.0.1:8080/api/me/services/steam/callback",
+	)
+	serviceSteamProvider.SetName("service_steam")
+
 	goth.UseProviders(
-		google.New(
-			utils.GetEnv("CLIENT_ID_GOOGLE", ""),
-			utils.GetEnv("CLIENT_SECRET_GOOGLE", ""),
-			"http://127.0.0.1:8080/auth/google/callback",
-			"openid",
-			"profile",
-			"email",
-		),
-		github.New(
-			utils.GetEnv("CLIENT_ID_GITHUB", ""),
-			utils.GetEnv("CLIENT_SECRET_GITHUB", ""),
-			"http://127.0.0.1:8080/auth/github/callback",
-			"user:email",
-		),
+		googleProvider,
+		githubProvider,
+		serviceSpotifyProvider,
+		serviceSteamProvider,
 	)
 }
 

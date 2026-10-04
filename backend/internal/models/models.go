@@ -50,6 +50,7 @@ type Service struct {
 	OAuthAuthorizeURL *string   `gorm:"type:text"`
 	OAuthTokenURL     *string   `gorm:"type:text"`
 	OAuthScopes       *string   `gorm:"type:text"`
+	Widgets           []Widget  `gorm:"foreignKey:ServiceID"`
 }
 
 func (Service) TableName() string { return "services" }

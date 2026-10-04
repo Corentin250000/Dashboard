@@ -49,6 +49,227 @@
                 }
             }
         },
+        "/api/me/services": {
+            "get": {
+                "description": "Return every catalog service, whether it requires a third-party connection, whether the current user is connected, and its available widget sizes.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "List services",
+                "responses": {
+                    "200": {
+                        "description": "Service catalog with per-user connection status.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServicesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "The session_id cookie is missing, expired or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceUnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "The service catalog or the user's connection statuses could not be loaded.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceServerErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/services/{service}/callback": {
+            "get": {
+                "description": "Complete the Spotify OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received Spotify tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "Complete service connection",
+                "parameters": [
+                    {
+                        "enum": [
+                            "spotify",
+                            "steam"
+                        ],
+                        "type": "string",
+                        "description": "Service technical name",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "OAuth state returned by Spotify; Steam OpenID does not return this parameter",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authorization code returned by the provider",
+                        "name": "code",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Connection stored; redirect to the frontend /subscription page."
+                    },
+                    "400": {
+                        "description": "The state does not match the service OAuth cookie, or the temporary OAuth session expired/cannot be decoded.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceOAuthStateResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "The current Dashboard session is missing, expired or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceUnauthorizedResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "The service is not present in the catalog, or no Goth service provider is registered.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceNotFoundResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "The service tokens could not be encrypted, loaded or persisted.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceServerErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Spotify/Steam rejected authorization, or the provider profile could not be retrieved.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceOAuthProviderResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/services/{service}/connect": {
+            "get": {
+                "description": "Start a third-party connection for Spotify (OAuth 2.0) or Steam (OpenID 2.0 via Goth). Google and GitHub are reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "services"
+                ],
+                "summary": "Connect a service",
+                "parameters": [
+                    {
+                        "enum": [
+                            "spotify",
+                            "steam"
+                        ],
+                        "type": "string",
+                        "description": "Service technical name",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to the Spotify OAuth 2.0 or Steam OpenID 2.0 authorization page."
+                    },
+                    "400": {
+                        "description": "The selected service has auth_type=none and does not need a connection.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceBadRequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "The session_id cookie is missing, expired or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceUnauthorizedResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "The service is not present in the catalog, or no Goth provider is registered for it.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceNotFoundResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "The OAuth state, provider authorization URL or OAuth session could not be created.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceServerErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database or the service OAuth credentials are not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/services/{service}/connection": {
+            "delete": {
+                "description": "Delete the current user's local service connection and its encrypted tokens. Also removes that service's dashboard widget instances. Provider-side token revocation is not generic and may require a provider-specific implementation.",
+                "tags": [
+                    "services"
+                ],
+                "summary": "Disconnect a service",
+                "parameters": [
+                    {
+                        "enum": [
+                            "spotify",
+                            "steam"
+                        ],
+                        "type": "string",
+                        "description": "Service technical name (spotify or steam)",
+                        "name": "service",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Connection, encrypted tokens and the user's widgets for this service deleted; empty response body."
+                    },
+                    "401": {
+                        "description": "The session_id cookie is missing, expired or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceUnauthorizedResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "The service is not present in the catalog.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceNotFoundResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "The service connection or associated widget instances could not be deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceDisconnectErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ServiceUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/me/widgets": {
             "get": {
                 "description": "Return every widget instance placed on the dashboard of the current user, ordered by creation date. Requires the session_id cookie.",
@@ -1325,6 +1546,172 @@
                 "type": {
                     "type": "string",
                     "example": "sncf.departures"
+                }
+            }
+        },
+        "widgets.ServiceBadRequestResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "This service does not require a connection."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceDisconnectErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Unable to disconnect the service."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceNotFoundResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The requested service does not exist."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceOAuthProviderResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The service rejected OAuth authorization."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceOAuthStateResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Invalid OAuth state. Restart the connection flow."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceResponse": {
+            "type": "object",
+            "properties": {
+                "connected": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Google services"
+                },
+                "display_name": {
+                    "type": "string",
+                    "example": "Google"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "google"
+                },
+                "requires_connection": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "widgets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.ServiceWidgetResponse"
+                    }
+                }
+            }
+        },
+        "widgets.ServiceServerErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Unable to persist the service connection."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceUnauthorizedResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Authentication required."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceUnavailableResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The database is not configured."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ServiceWidgetResponse": {
+            "type": "object",
+            "properties": {
+                "available_sizes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "small",
+                        "wide",
+                        "big"
+                    ]
+                },
+                "type": {
+                    "type": "string",
+                    "example": "google.calendar"
+                }
+            }
+        },
+        "widgets.ServicesResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.ServiceResponse"
+                    }
                 }
             }
         },

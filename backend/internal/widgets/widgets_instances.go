@@ -103,6 +103,26 @@ type WidgetUnavailableResponse struct {
 // It mirrors backend/internal/about.Registry so type strings like "sncf.departures"
 // resolve to database rows.
 func SeedCatalog(database *gorm.DB) error {
+	for _, serviceData := range []models.Service{
+		{
+			Name:        "spotify",
+			DisplayName: "Spotify",
+			Description: "Spotify account and playback data",
+			AuthType:    "oauth2",
+		},
+		{
+			Name:        "steam",
+			DisplayName: "Steam",
+			Description: "Steam account and game data",
+			AuthType:    "oauth2",
+		},
+	} {
+		var service models.Service
+		if err := database.Where("name = ?", serviceData.Name).FirstOrCreate(&service, serviceData).Error; err != nil {
+			return err
+		}
+	}
+
 	service := models.Service{}
 	if err := database.Where("name = ?", "sncf").FirstOrCreate(&service, models.Service{
 		Name:        "sncf",

@@ -366,6 +366,121 @@ definitions:
     - size
     - type
     type: object
+  widgets.ServiceBadRequestResponse:
+    properties:
+      message:
+        example: This service does not require a connection.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceDisconnectErrorResponse:
+    properties:
+      message:
+        example: Unable to disconnect the service.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceNotFoundResponse:
+    properties:
+      message:
+        example: The requested service does not exist.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceOAuthProviderResponse:
+    properties:
+      message:
+        example: The service rejected OAuth authorization.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceOAuthStateResponse:
+    properties:
+      message:
+        example: Invalid OAuth state. Restart the connection flow.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceResponse:
+    properties:
+      connected:
+        example: false
+        type: boolean
+      description:
+        example: Google services
+        type: string
+      display_name:
+        example: Google
+        type: string
+      name:
+        example: google
+        type: string
+      requires_connection:
+        example: true
+        type: boolean
+      widgets:
+        items:
+          $ref: '#/definitions/widgets.ServiceWidgetResponse'
+        type: array
+    type: object
+  widgets.ServiceServerErrorResponse:
+    properties:
+      message:
+        example: Unable to persist the service connection.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceUnauthorizedResponse:
+    properties:
+      message:
+        example: Authentication required.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceUnavailableResponse:
+    properties:
+      message:
+        example: The database is not configured.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ServiceWidgetResponse:
+    properties:
+      available_sizes:
+        example:
+        - small
+        - wide
+        - big
+        items:
+          type: string
+        type: array
+      type:
+        example: google.calendar
+        type: string
+    type: object
+  widgets.ServicesResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/widgets.ServiceResponse'
+        type: array
+    type: object
   widgets.SncfBadGatewayResponse:
     properties:
       message:
@@ -603,6 +718,174 @@ paths:
       summary: Service catalog
       tags:
       - system
+  /api/me/services:
+    get:
+      description: Return every catalog service, whether it requires a third-party
+        connection, whether the current user is connected, and its available widget
+        sizes.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service catalog with per-user connection status.
+          schema:
+            $ref: '#/definitions/widgets.ServicesResponse'
+        "401":
+          description: The session_id cookie is missing, expired or invalid.
+          schema:
+            $ref: '#/definitions/widgets.ServiceUnauthorizedResponse'
+        "500":
+          description: The service catalog or the user's connection statuses could
+            not be loaded.
+          schema:
+            $ref: '#/definitions/widgets.ServiceServerErrorResponse'
+        "503":
+          description: The database is not configured.
+          schema:
+            $ref: '#/definitions/widgets.ServiceUnavailableResponse'
+      summary: List services
+      tags:
+      - services
+  /api/me/services/{service}/callback:
+    get:
+      description: Complete the Spotify OAuth 2.0 or Steam OpenID 2.0 flow, encrypt
+        the received Spotify tokens (or store the Steam account identifier), upsert
+        the current user's service connection, then redirect to the frontend subscription
+        page.
+      parameters:
+      - description: Service technical name
+        enum:
+        - spotify
+        - steam
+        in: path
+        name: service
+        required: true
+        type: string
+      - description: OAuth state returned by Spotify; Steam OpenID does not return
+          this parameter
+        in: query
+        name: state
+        type: string
+      - description: Authorization code returned by the provider
+        in: query
+        name: code
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Connection stored; redirect to the frontend /subscription page.
+        "400":
+          description: The state does not match the service OAuth cookie, or the temporary
+            OAuth session expired/cannot be decoded.
+          schema:
+            $ref: '#/definitions/widgets.ServiceOAuthStateResponse'
+        "401":
+          description: The current Dashboard session is missing, expired or invalid.
+          schema:
+            $ref: '#/definitions/widgets.ServiceUnauthorizedResponse'
+        "404":
+          description: The service is not present in the catalog, or no Goth service
+            provider is registered.
+          schema:
+            $ref: '#/definitions/widgets.ServiceNotFoundResponse'
+        "500":
+          description: The service tokens could not be encrypted, loaded or persisted.
+          schema:
+            $ref: '#/definitions/widgets.ServiceServerErrorResponse'
+        "502":
+          description: Spotify/Steam rejected authorization, or the provider profile
+            could not be retrieved.
+          schema:
+            $ref: '#/definitions/widgets.ServiceOAuthProviderResponse'
+      summary: Complete service connection
+      tags:
+      - services
+  /api/me/services/{service}/connect:
+    get:
+      description: Start a third-party connection for Spotify (OAuth 2.0) or Steam
+        (OpenID 2.0 via Goth). Google and GitHub are reserved for application login.
+        The browser is redirected to the provider; the callback stores encrypted tokens
+        or the Steam account identifier for the current user.
+      parameters:
+      - description: Service technical name
+        enum:
+        - spotify
+        - steam
+        in: path
+        name: service
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Redirect to the Spotify OAuth 2.0 or Steam OpenID 2.0 authorization
+            page.
+        "400":
+          description: The selected service has auth_type=none and does not need a
+            connection.
+          schema:
+            $ref: '#/definitions/widgets.ServiceBadRequestResponse'
+        "401":
+          description: The session_id cookie is missing, expired or invalid.
+          schema:
+            $ref: '#/definitions/widgets.ServiceUnauthorizedResponse'
+        "404":
+          description: The service is not present in the catalog, or no Goth provider
+            is registered for it.
+          schema:
+            $ref: '#/definitions/widgets.ServiceNotFoundResponse'
+        "500":
+          description: The OAuth state, provider authorization URL or OAuth session
+            could not be created.
+          schema:
+            $ref: '#/definitions/widgets.ServiceServerErrorResponse'
+        "503":
+          description: The database or the service OAuth credentials are not configured.
+          schema:
+            $ref: '#/definitions/widgets.ServiceUnavailableResponse'
+      summary: Connect a service
+      tags:
+      - services
+  /api/me/services/{service}/connection:
+    delete:
+      description: Delete the current user's local service connection and its encrypted
+        tokens. Also removes that service's dashboard widget instances. Provider-side
+        token revocation is not generic and may require a provider-specific implementation.
+      parameters:
+      - description: Service technical name (spotify or steam)
+        enum:
+        - spotify
+        - steam
+        in: path
+        name: service
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Connection, encrypted tokens and the user's widgets for this
+            service deleted; empty response body.
+        "401":
+          description: The session_id cookie is missing, expired or invalid.
+          schema:
+            $ref: '#/definitions/widgets.ServiceUnauthorizedResponse'
+        "404":
+          description: The service is not present in the catalog.
+          schema:
+            $ref: '#/definitions/widgets.ServiceNotFoundResponse'
+        "500":
+          description: The service connection or associated widget instances could
+            not be deleted.
+          schema:
+            $ref: '#/definitions/widgets.ServiceDisconnectErrorResponse'
+        "503":
+          description: The database is not configured.
+          schema:
+            $ref: '#/definitions/widgets.ServiceUnavailableResponse'
+      summary: Disconnect a service
+      tags:
+      - services
   /api/me/widgets:
     get:
       description: Return every widget instance placed on the dashboard of the current

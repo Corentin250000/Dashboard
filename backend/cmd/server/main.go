@@ -124,10 +124,10 @@ func main() {
 	api.Delete("/me/widgets/:id", widgets.DeleteWidget)
 
 	// Connected services.
-	// api.Get("/me/services", services.ListUserServices)
-	// api.Get("/me/services/:service/connect", services.StartOAuth)
-	// api.Get("/me/services/:service/callback", services.OAuthCallback)
-	// api.Delete("/me/services/:service/connection", services.Disconnect)
+	api.Get("/me/services", widgets.ListUserServices)
+	api.Get("/me/services/:service/connect", widgets.StartOAuth)
+	api.Get("/me/services/:service/callback", widgets.OAuthCallback)
+	api.Delete("/me/services/:service/connection", widgets.Disconnect)
 
 	// Account.
 	// api.Delete("/me/account", auth.DeleteAccount)
