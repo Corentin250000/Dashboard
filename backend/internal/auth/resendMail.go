@@ -17,16 +17,16 @@ type ResendRequest struct {
 
 // ResendConfirmationHandler rotates a confirmation token and sends it again.
 // @Summary Resend confirmation email
-// @Description Send a new email confirmation token for an unconfirmed account. Browser clients use the temporary HTTP-only pending_confirmation cookie; non-browser clients may send the legacy token body.
+// @Description Rotate the confirmation token of an unconfirmed account and send a new confirmation email. Browser clients are identified by the temporary HTTP-only pending_confirmation cookie set by POST /auth/register; non-browser clients may use the legacy token body. Rate-limited to 3 requests per 15 minutes. Already-confirmed accounts return "already_confirmed".
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param token body ResendRequest false "Optional current confirmation token for non-browser clients"
-// @Success 200 {object} ResendSuccessResponse
-// @Failure 400 {object} ResendBadRequestResponse
-// @Failure 404 {object} ResendNotFoundResponse
-// @Failure 500 {object} ResendErrorResponse
-// @Failure 503 {object} ResendUnavailableResponse
+// @Param token body ResendRequest false "Optional legacy body for non-browser clients; browser clients use the pending_confirmation cookie"
+// @Success 200 {object} ResendSuccessResponse "New confirmation email queued (or account already confirmed)."
+// @Failure 400 {object} ResendBadRequestResponse "No pending confirmation cookie or token body was provided."
+// @Failure 404 {object} ResendNotFoundResponse "No account matches this token (unknown or already consumed)."
+// @Failure 500 {object} ResendErrorResponse "Database error while rotating the token."
+// @Failure 503 {object} ResendUnavailableResponse "The database is not configured."
 // @Router /confirm/resend [post]
 func ResendConfirmationHandler(c fiber.Ctx) error {
 	if db == nil {
@@ -38,7 +38,7 @@ func ResendConfirmationHandler(c fiber.Ctx) error {
 
 	token := strings.TrimSpace(c.Cookies(pendingConfirmationCookieName))
 	if token == "" {
-		// Keep accepting the token body for non-browser clients.
+		// Keep accepting the old body-based contract for non-browser clients.
 		var req ResendRequest
 		if err := c.Bind().Body(&req); err == nil {
 			token = strings.TrimSpace(req.Token)

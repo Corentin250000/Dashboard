@@ -8,6 +8,7 @@ require (
 	github.com/gofiber/swagger/v2 v2.0.0-20260208141700-e4cb1aaf502c
 	github.com/google/uuid v1.6.0
 	github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
+	github.com/markbates/goth v1.82.0
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/crypto v0.55.0
 	gorm.io/driver/postgres v1.6.3
@@ -15,6 +16,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
@@ -48,6 +50,7 @@ require (
 	github.com/valyala/fasthttp v1.73.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0 // indirect

@@ -18,16 +18,16 @@ type RegisterRequest struct {
 
 // Register creates a local account and sends an email confirmation token.
 // @Summary Register
-// @Description Create a user account. The account must be confirmed by email before login. A temporary HTTP-only pending_confirmation cookie is set for POST /confirm/resend.
+// @Description Create a user account with email and password (minimum 8 characters). The account stays unconfirmed until the emailed token is validated via GET /confirm, and login is blocked meanwhile. No authenticated session is created here; a temporary HTTP-only pending_confirmation cookie is set so the browser can call POST /confirm/resend without a body.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param credentials body RegisterRequest true "Registration credentials"
-// @Success 201 {object} RegisterSuccessResponse
-// @Failure 400 {object} RegisterBadRequestResponse
-// @Failure 409 {object} RegisterConflictResponse
-// @Failure 500 {object} RegisterServerErrorResponse
-// @Failure 503 {object} RegisterUnavailableResponse
+// @Param credentials body RegisterRequest true "Registration credentials (valid email + password of at least 8 characters)"
+// @Success 201 {object} RegisterSuccessResponse "Account created: check the inbox for the confirmation email."
+// @Failure 400 {object} RegisterBadRequestResponse "Malformed JSON body, invalid email format, or password shorter than 8 characters."
+// @Failure 409 {object} RegisterConflictResponse "This email address is already registered."
+// @Failure 500 {object} RegisterServerErrorResponse "Password hashing, token generation, or account creation failed."
+// @Failure 503 {object} RegisterUnavailableResponse "The database is not configured."
 // @Router /auth/register [post]
 func Register(c fiber.Ctx) error {
 	if db == nil {
@@ -48,7 +48,7 @@ func Register(c fiber.Ctx) error {
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Invalid fields",
+			"message": "The email must be valid and the password must be at least 8 characters long",
 		})
 	}
 

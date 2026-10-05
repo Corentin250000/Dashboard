@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"dashboard-backend/internal/mail"
+	"dashboard-backend/internal/models"
 	"dashboard-backend/internal/utils"
 
 	"github.com/go-playground/validator/v10"
@@ -44,10 +45,13 @@ func ptrTime(t time.Time) *time.Time {
 	return &t
 }
 
-const (
-	pendingConfirmationCookieName = "pending_confirmation"
-	confirmationLifetime          = 24 * time.Hour
-)
+const sessionLifetime = 7 * 24 * time.Hour
+
+const sessionCookieName = "session_id"
+
+const pendingConfirmationCookieName = "pending_confirmation"
+
+const confirmationLifetime = 24 * time.Hour
 
 func setPendingConfirmationCookie(c fiber.Ctx, token string, expiresAt time.Time) {
 	c.Cookie(&fiber.Cookie{
@@ -74,16 +78,50 @@ func clearPendingConfirmationCookie(c fiber.Ctx) {
 	})
 }
 
-// createSession creates a new session for userID and returns its ID.
-// TODO: persist the session (DB/store) once the sessions table exists;
-// for now it returns a signed random token only.
+// createSession creates and persists a new session for userID.
 func createSession(userID uuid.UUID) (string, error) {
-	token, err := generateSecureToken()
-	if err != nil {
+	if db == nil {
+		return "", fmt.Errorf("database not configured")
+	}
+
+	session := models.Session{
+		ID:        uuid.New(),
+		UserID:    userID,
+		ExpiresAt: time.Now().Add(sessionLifetime),
+	}
+	if err := db.Create(&session).Error; err != nil {
 		return "", err
 	}
-	_ = userID
-	return token, nil
+	return session.ID.String(), nil
+}
+
+// deleteSession removes a session during logout.
+func deleteSession(sessionID string) error {
+	if db == nil {
+		return fmt.Errorf("database not configured")
+	}
+	id, err := uuid.Parse(sessionID)
+	if err != nil {
+		return nil
+	}
+	return db.Delete(&models.Session{}, "id = ?", id).Error
+}
+
+// authenticateSession validates the cookie and returns the associated user.
+func authenticateSession(sessionID string) (*models.User, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database not configured")
+	}
+	id, err := uuid.Parse(sessionID)
+	if err != nil {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	var session models.Session
+	if err := db.Preload("User").Where("id = ? AND expires_at > ?", id, time.Now()).First(&session).Error; err != nil {
+		return nil, err
+	}
+	return &session.User, nil
 }
 
 // sendConfirmationEmail queues the confirmation email.

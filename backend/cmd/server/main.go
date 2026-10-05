@@ -46,12 +46,18 @@ func main() {
 	if err := models.AutoMigrate(database); err != nil {
 		log.Fatalf("database migration failed: %v", err)
 	}
+	if err := models.SeedWidgetSizes(database); err != nil {
+		log.Fatalf("widget size seed failed: %v", err)
+	}
 
 	var stationCount int64
 	if err := database.Model(&models.SncfStation{}).Count(&stationCount).Error; err != nil {
 		log.Fatalf("failed to check SNCF stations: %v", err)
 	}
 	widgets.SetDB(database)
+	if err := widgets.SeedCatalog(database); err != nil {
+		log.Fatalf("widget catalog seed failed: %v", err)
+	}
 	if stationCount == 0 {
 		go func() {
 			if err := widgets.GetAllStations(database); err != nil {
@@ -61,6 +67,7 @@ func main() {
 	}
 
 	auth.SetDB(database)
+	auth.ConfigureOAuth()
 
 	port := utils.GetEnv("PORT", "8080")
 	addr := ":" + port
@@ -92,6 +99,10 @@ func main() {
 	app.Add(getHead, "/", handleRoot)
 	app.Post("/auth/register", auth.Register)
 	app.Post("/auth/login", auth.Login)
+	app.Post("/auth/logout", auth.RequireAuth, auth.Logout)
+	app.Get("/auth/me", auth.RequireAuth, auth.Me)
+	app.Get("/auth/:provider", auth.OAuthStart)
+	app.Get("/auth/:provider/callback", auth.OAuthCallback)
 	app.Get("/confirm", auth.ConfirmHandler)
 	app.Post("/confirm/resend", limiter.New(limiter.Config{
 		Max:        3,
@@ -101,7 +112,26 @@ func main() {
 		URL:   "/docs/swagger/doc.json",
 		Title: "Dashboard API Reference",
 	}))
+	// SNCF data is public and does not require an authenticated session.
 	app.Post("/api/sncf/departures", widgets.GetDepartures)
+
+	api := app.Group("/api", auth.RequireAuth)
+
+	// Dashboard widget instances.
+	api.Get("/me/widgets", widgets.ListWidgets)
+	api.Post("/me/widgets", widgets.CreateWidget)
+	api.Patch("/me/widgets/:id", widgets.UpdateWidget)
+	api.Delete("/me/widgets/:id", widgets.DeleteWidget)
+
+	// Connected services.
+	api.Get("/me/services", widgets.ListUserServices)
+	api.Get("/me/services/:service/connect", widgets.StartOAuth)
+	api.Get("/me/services/:service/callback", widgets.OAuthCallback)
+	api.Delete("/me/services/:service/connection", widgets.Disconnect)
+
+	// Account.
+	api.Delete("/me/account", auth.DeleteAccount)
+
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
 	})

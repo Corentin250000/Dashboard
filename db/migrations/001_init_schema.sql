@@ -23,7 +23,19 @@ CREATE TABLE users (
     updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. Static catalog of available services (weather, github, steam, rss...).
+-- 2. Persistent browser sessions.
+-- The cookie value is an opaque UUID and is only useful while this row exists
+-- and has not expired.
+CREATE TABLE sessions (
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id    UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_sessions_user_id ON sessions (user_id);
+CREATE INDEX idx_sessions_expires_at ON sessions (expires_at);
+
+-- 3. Static catalog of available services (weather, github, steam, rss...).
 CREATE TABLE services (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name                VARCHAR(64) NOT NULL UNIQUE, -- technical identifier
@@ -65,7 +77,29 @@ CREATE TABLE widgets (
 );
 CREATE INDEX idx_widgets_service_id ON widgets (service_id);
 
--- 5. Configurable parameters of a catalog widget.
+-- 5. Global widget sizes expressed in 6x6 grid cells.
+CREATE TABLE widget_sizes (
+    code   VARCHAR(16) PRIMARY KEY,
+    width  INTEGER NOT NULL CHECK (width > 0 AND width <= 6),
+    height INTEGER NOT NULL CHECK (height > 0 AND height <= 6)
+);
+
+INSERT INTO widget_sizes (code, width, height)
+VALUES
+    ('small', 1, 1),
+    ('wide', 2, 1),
+    ('tall', 1, 2),
+    ('big', 2, 2);
+
+-- 6. Sizes allowed by each catalog widget.
+CREATE TABLE widget_allowed_sizes (
+    widget_id UUID NOT NULL REFERENCES widgets (id) ON DELETE CASCADE,
+    size_code VARCHAR(16) NOT NULL REFERENCES widget_sizes (code),
+    PRIMARY KEY (widget_id, size_code)
+);
+CREATE INDEX idx_widget_allowed_sizes_size_code ON widget_allowed_sizes (size_code);
+
+-- 7. Configurable parameters of a catalog widget.
 -- 'type' MUST stay in sync with the /about.json contract ("integer"|"string").
 CREATE TABLE widget_params (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -79,19 +113,23 @@ CREATE TABLE widget_params (
 );
 CREATE INDEX idx_widget_params_widget_id ON widget_params (widget_id);
 
--- 6. Configured widget instances placed on a user's dashboard.
+-- 8. Configured widget instances placed on a user's dashboard.
 CREATE TABLE widget_instances (
     id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id              UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     widget_id            UUID NOT NULL REFERENCES widgets (id) ON DELETE CASCADE,
     config               JSONB NOT NULL DEFAULT '{}', -- this instance's param values
+    size_code            VARCHAR(16) NOT NULL DEFAULT 'small' REFERENCES widget_sizes (code),
     refresh_rate_seconds INTEGER NOT NULL CHECK (refresh_rate_seconds > 0),
-    position_x           INTEGER NOT NULL DEFAULT 0,
-    position_y           INTEGER NOT NULL DEFAULT 0,
+    position_x           INTEGER NOT NULL DEFAULT 0 CHECK (position_x >= 0 AND position_x < 6),
+    position_y           INTEGER NOT NULL DEFAULT 0 CHECK (position_y >= 0 AND position_y < 6),
     last_refreshed_at    TIMESTAMPTZ,                 -- read by the timer
     cached_data          JSONB,                       -- last fetch result
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT fk_widget_instance_allowed_size
+        FOREIGN KEY (widget_id, size_code)
+        REFERENCES widget_allowed_sizes (widget_id, size_code)
 );
 CREATE INDEX idx_widget_instances_user_id ON widget_instances (user_id);
 CREATE INDEX idx_widget_instances_widget_id ON widget_instances (widget_id);

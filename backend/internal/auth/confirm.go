@@ -12,15 +12,15 @@ import (
 
 // ConfirmHandler validates an email confirmation token.
 // @Summary Confirm email
-// @Description Confirm a user account with the token sent by email.
+// @Description Confirm a user account with the single-use token sent by email (valid 24h). The token is consumed on success; already-confirmed accounts return "already_confirmed". No session is created: log in afterwards via POST /auth/login.
 // @Tags auth
 // @Produce json
-// @Param token query string true "Email confirmation token"
-// @Success 200 {object} ConfirmedResponse
-// @Failure 400 {object} ConfirmBadRequestResponse
-// @Failure 404 {object} InvalidTokenResponse
-// @Failure 410 {object} ExpiredResponse
-// @Failure 500 {object} ConfirmErrorResponse
+// @Param token query string true "Email confirmation token from the confirmation link"
+// @Success 200 {object} ConfirmedResponse "Account confirmed (or already confirmed)."
+// @Failure 400 {object} ConfirmBadRequestResponse "Missing token query parameter."
+// @Failure 404 {object} InvalidTokenResponse "Unknown or already-consumed token."
+// @Failure 410 {object} ExpiredResponse "Token older than 24h (request a new one via POST /confirm/resend)."
+// @Failure 500 {object} ConfirmErrorResponse "Database error while confirming."
 // @Router /confirm [get]
 func ConfirmHandler(c fiber.Ctx) error {
 	if db == nil {
