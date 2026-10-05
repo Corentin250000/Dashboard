@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../shared/api';
-import '../auth.css';
+import AuthCard from '../components/authCard';
  
 type ConfirmStatus =
   | 'loading'
@@ -52,24 +52,20 @@ function VerifyEmailPage() {
   const canResend = status === 'expired' || status === 'invalid';
  
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1 className="auth-title">Email verification</h1>
- 
-        <div className="auth-field">
-          <p>{MESSAGES[status]}</p>
-        </div>
- 
-        {canResend && (
-          <p className="auth-switch">
+    <AuthCard title="Email verification">
+      <div className="mb-4 flex flex-col gap-1.5 text-[13px] text-[var(--text-secondary)]">
+        <p>{MESSAGES[status]}</p>
+      </div>
+
+      {canResend && (
+          <p className="mt-5 text-center text-sm text-[var(--text-secondary)]">
             Need a new link?{' '}
-            <a className="auth-link" href="/pending-verification">
+            <Link className="text-[var(--accent)] no-underline hover:underline" to="/pending-verification">
               Resend email
-            </a>
+            </Link>
           </p>
         )}
-      </div>
-    </div>
+    </AuthCard>
   );
 }
  

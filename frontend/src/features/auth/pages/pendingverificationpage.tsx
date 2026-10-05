@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, ApiError } from '../../shared/api';
-import '../auth.css';
+import AuthCard from '../components/authCard';
  
 function PendingVerificationPage() {
   const [message, setMessage] = useState('');
@@ -35,24 +35,51 @@ function PendingVerificationPage() {
       })
       .finally(() => setIsSending(false));
   };
- 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1 className="auth-title">Check your emails!</h1>
- 
-        <div className="auth-field">
-          <p>A verification email has been sent to you.</p>
-          <p>Check your inbox and don't forget to check your spam folder.</p>
-        </div>
- 
-        <button className="auth-submit" onClick={handleResend} disabled={isSending}>
-          {isSending ? 'Sending…' : 'Resend email'}
-        </button>
- 
-        {message && (<p className={messageType === 'success' ? 'auth-message' : 'auth-error'}> {message} </p>)}
-        </div>
-    </div>
+    <AuthCard title="Check your emails!">
+
+      <div className="mb-4 flex flex-col gap-1.5 text-[13px] text-[var(--text-secondary)]">
+        <p>A verification email has been sent to you.</p>
+        <p>
+          Check your inbox and don't forget to check your spam folder.
+        </p>
+      </div>
+
+      <button
+        className="
+          bg-[var(--accent)]
+          mt-2
+          w-full
+          rounded-lg
+          px-3
+          py-3
+          text-[var(--text-primary)]
+          text-[15px]
+          font-medium
+          transition
+          hover:opacity-90
+          disabled:cursor-not-allowed
+          disabled:opacity-50
+        "
+        onClick={handleResend}
+        disabled={isSending}
+      >
+        {isSending ? "Sending…" : "Resend email"}
+      </button>
+
+      {message && (
+        <p role="alert"
+          className={
+            messageType === "success"
+              ? "text-[15px] font-medium text-[var(--text-secondary)]"
+              : "text-[15px] font-medium text-[var(--accent-secondary)]"
+          }
+        >
+          {message}
+        </p>
+      )}
+
+    </AuthCard>
   );
 }
  

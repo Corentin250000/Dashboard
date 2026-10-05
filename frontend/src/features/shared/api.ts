@@ -18,30 +18,37 @@ export type SncfDeparture = {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
+    ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
     credentials: 'include',
-    ...options,
   });
 
   if (!response.ok) {
-    throw new ApiError(`Error ${response.status}`, response.status);
+    let message = `Error ${response.status}`;
+    try {
+      const body = await response.json();
+      if (typeof body.error === 'string') message = body.error;
+      else if (typeof body.message === 'string') message = body.message;
+    } catch {}
+    throw new ApiError(message, response.status);
   }
   return response.json();
 }
 
 export const api = {
     login: (email: string, password: string) =>
-        request<{ token: string }>('/auth/login',
+        request<{ message: string }>('/auth/login',
           {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           }),
     register: (email: string, password: string) =>
-        request<{ token: string }>('/auth/register',
+        request<{ message: string }>('/auth/register',
           {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           }),
+    me: () => request<Record<string, unknown>>('/auth/me', { method: 'GET' }),
     confirmEmail: (token: string) =>
         request<{ status: 'confirmed' | 'already_confirmed' | 'expired' | 'invalid' }>(
             `/confirm?token=${encodeURIComponent(token)}`,
