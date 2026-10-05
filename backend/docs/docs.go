@@ -185,7 +185,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Create a user account. The account must be confirmed by email before login.",
+                "description": "Create a user account. The account must be confirmed by email before login. A temporary HTTP-only pending_confirmation cookie is set for POST /confirm/resend.",
                 "consumes": [
                     "application/json"
                 ],
@@ -296,7 +296,7 @@ const docTemplate = `{
         },
         "/confirm/resend": {
             "post": {
-                "description": "Send a new email confirmation token for an unconfirmed account.",
+                "description": "Send a new email confirmation token for an unconfirmed account. Browser clients use the temporary HTTP-only pending_confirmation cookie; non-browser clients may send the legacy token body.",
                 "consumes": [
                     "application/json"
                 ],
@@ -309,10 +309,9 @@ const docTemplate = `{
                 "summary": "Resend confirmation email",
                 "parameters": [
                     {
-                        "description": "Current confirmation token",
+                        "description": "Optional current confirmation token for non-browser clients",
                         "name": "token",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/auth.ResendRequest"
                         }

@@ -12,6 +12,7 @@ import (
 	"dashboard-backend/internal/utils"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/mailjet/mailjet-apiv3-go/v4"
 	"gorm.io/gorm"
@@ -41,6 +42,36 @@ func generateSecureToken() (string, error) {
 // ptrTime returns a pointer to t (convenience for nullable timestamps).
 func ptrTime(t time.Time) *time.Time {
 	return &t
+}
+
+const (
+	pendingConfirmationCookieName = "pending_confirmation"
+	confirmationLifetime          = 24 * time.Hour
+)
+
+func setPendingConfirmationCookie(c fiber.Ctx, token string, expiresAt time.Time) {
+	c.Cookie(&fiber.Cookie{
+		Name:     pendingConfirmationCookieName,
+		Value:    token,
+		HTTPOnly: true,
+		Secure:   c.Protocol() == "https",
+		SameSite: "Lax",
+		Path:     "/",
+		Expires:  expiresAt,
+	})
+}
+
+func clearPendingConfirmationCookie(c fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     pendingConfirmationCookieName,
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   c.Protocol() == "https",
+		SameSite: "Lax",
+		Path:     "/",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+	})
 }
 
 // createSession creates a new session for userID and returns its ID.
