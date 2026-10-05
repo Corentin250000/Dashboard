@@ -95,6 +95,7 @@ func Login(c fiber.Ctx) error {
 		HTTPOnly: true,
 		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
+		Path:     "/",
 		Expires:  time.Now().Add(sessionLifetime),
 	})
 

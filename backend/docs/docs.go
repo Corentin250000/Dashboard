@@ -55,6 +55,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/me/account": {
+            "delete": {
+                "description": "Permanently delete the authenticated user's account, sessions, service connections, and dashboard widgets. The session cookie is cleared after successful deletion.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Delete account",
+                "responses": {
+                    "200": {
+                        "description": "Account deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/auth.DeleteAccountSuccessResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Missing, expired, or invalid session.",
+                        "schema": {
+                            "$ref": "#/definitions/auth.SessionUnauthorizedResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Unable to delete the account.",
+                        "schema": {
+                            "$ref": "#/definitions/auth.DeleteAccountErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/auth.DeleteAccountUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/me/services": {
             "get": {
                 "description": "Return every catalog service, whether it requires a third-party connection, whether the current user is connected, and its available widget sizes.",
@@ -1133,6 +1171,41 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "auth.DeleteAccountErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Unable to delete account"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "auth.DeleteAccountSuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Account deleted"
+                }
+            }
+        },
+        "auth.DeleteAccountUnavailableResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "database not configured"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
                 }
             }
         },

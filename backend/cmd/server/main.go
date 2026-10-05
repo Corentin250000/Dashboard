@@ -130,7 +130,7 @@ func main() {
 	api.Delete("/me/services/:service/connection", widgets.Disconnect)
 
 	// Account.
-	// api.Delete("/me/account", auth.DeleteAccount)
+	api.Delete("/me/account", auth.DeleteAccount)
 
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})

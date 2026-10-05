@@ -235,6 +235,7 @@ func setSessionCookie(c fiber.Ctx, userID uuid.UUID) error {
 		HTTPOnly: true,
 		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
+		Path:     "/",
 		Expires:  time.Now().Add(sessionLifetime),
 	})
 	return nil

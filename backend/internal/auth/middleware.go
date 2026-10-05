@@ -97,6 +97,7 @@ func clearSessionCookie(c fiber.Ctx) {
 		HTTPOnly: true,
 		Secure:   c.Protocol() == "https",
 		SameSite: "Lax",
+		Path:     "/",
 		MaxAge:   -1,
 	})
 }

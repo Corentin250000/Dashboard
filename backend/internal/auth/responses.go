@@ -38,6 +38,20 @@ type LogoutSuccessResponse struct {
 	Message string `json:"message" example:"Logged out"`
 }
 
+type DeleteAccountSuccessResponse struct {
+	Message string `json:"message" example:"Account deleted"`
+}
+
+type DeleteAccountErrorResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to delete account"`
+}
+
+type DeleteAccountUnavailableResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"database not configured"`
+}
+
 type CurrentUserResponse struct {
 	ID    string `json:"id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Email string `json:"email" example:"user@example.com"`
