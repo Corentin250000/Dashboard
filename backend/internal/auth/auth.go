@@ -95,6 +95,19 @@ func createSession(userID uuid.UUID) (string, error) {
 	return session.ID.String(), nil
 }
 
+// writeSessionCookie authenticates the current browser with a session ID.
+func writeSessionCookie(c fiber.Ctx, sessionID string) {
+	c.Cookie(&fiber.Cookie{
+		Name:     sessionCookieName,
+		Value:    sessionID,
+		HTTPOnly: true,
+		Secure:   c.Protocol() == "https",
+		SameSite: "Lax",
+		Path:     "/",
+		Expires:  time.Now().Add(sessionLifetime),
+	})
+}
+
 // deleteSession removes a session during logout.
 func deleteSession(sessionID string) error {
 	if db == nil {

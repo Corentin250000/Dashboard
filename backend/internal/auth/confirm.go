@@ -12,7 +12,7 @@ import (
 
 // ConfirmHandler validates an email confirmation token.
 // @Summary Confirm email
-// @Description Confirm a user account with the single-use token sent by email (valid 24h). The token is consumed on success; already-confirmed accounts return "already_confirmed". No session is created: log in afterwards via POST /auth/login.
+// @Description Confirm a user account with the single-use token sent by email (valid 24h). The token is consumed on success and a 7-day session is created automatically; already-confirmed accounts return "already_confirmed".
 // @Tags auth
 // @Produce json
 // @Param token query string true "Email confirmation token from the confirmation link"
@@ -69,6 +69,15 @@ func ConfirmHandler(c fiber.Ctx) error {
 		})
 	}
 	clearPendingConfirmationCookie(c)
+
+	sessionID, err := createSession(user.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  "error",
+			"message": "unable to create session",
+		})
+	}
+	writeSessionCookie(c, sessionID)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "confirmed"})
 }
