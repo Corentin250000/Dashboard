@@ -716,7 +716,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Create a user account with email and password (minimum 8 characters). The account stays unconfirmed until the emailed token is validated via GET /confirm, and login is blocked meanwhile. No session is created here.",
+                "description": "Create a user account with email and password (minimum 8 characters). The account stays unconfirmed until the emailed token is validated via GET /confirm, and login is blocked meanwhile. No authenticated session is created here; a temporary HTTP-only pending_confirmation cookie is set so the browser can call POST /confirm/resend without a body.",
                 "consumes": [
                     "application/json"
                 ],
@@ -942,7 +942,7 @@ const docTemplate = `{
         },
         "/confirm/resend": {
             "post": {
-                "description": "Rotate the confirmation token of an unconfirmed account and send a new confirmation email. Rate-limited to 3 requests per 15 minutes. Already-confirmed accounts return \"already_confirmed\".",
+                "description": "Rotate the confirmation token of an unconfirmed account and send a new confirmation email. Browser clients are identified by the temporary HTTP-only pending_confirmation cookie set by POST /auth/register; non-browser clients may use the legacy token body. Rate-limited to 3 requests per 15 minutes. Already-confirmed accounts return \"already_confirmed\".",
                 "consumes": [
                     "application/json"
                 ],
@@ -955,10 +955,9 @@ const docTemplate = `{
                 "summary": "Resend confirmation email",
                 "parameters": [
                     {
-                        "description": "Current (expired or lost) confirmation token",
+                        "description": "Optional legacy body for non-browser clients; browser clients use the pending_confirmation cookie",
                         "name": "token",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/auth.ResendRequest"
                         }
@@ -972,7 +971,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Malformed JSON body or missing token.",
+                        "description": "No pending confirmation cookie or token body was provided.",
                         "schema": {
                             "$ref": "#/definitions/auth.ResendBadRequestResponse"
                         }

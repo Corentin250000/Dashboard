@@ -1300,7 +1300,9 @@ paths:
       - application/json
       description: Create a user account with email and password (minimum 8 characters).
         The account stays unconfirmed until the emailed token is validated via GET
-        /confirm, and login is blocked meanwhile. No session is created here.
+        /confirm, and login is blocked meanwhile. No authenticated session is created
+        here; a temporary HTTP-only pending_confirmation cookie is set so the browser
+        can call POST /confirm/resend without a body.
       parameters:
       - description: Registration credentials (valid email + password of at least
           8 characters)
@@ -1379,13 +1381,15 @@ paths:
       consumes:
       - application/json
       description: Rotate the confirmation token of an unconfirmed account and send
-        a new confirmation email. Rate-limited to 3 requests per 15 minutes. Already-confirmed
-        accounts return "already_confirmed".
+        a new confirmation email. Browser clients are identified by the temporary
+        HTTP-only pending_confirmation cookie set by POST /auth/register; non-browser
+        clients may use the legacy token body. Rate-limited to 3 requests per 15 minutes.
+        Already-confirmed accounts return "already_confirmed".
       parameters:
-      - description: Current (expired or lost) confirmation token
+      - description: Optional legacy body for non-browser clients; browser clients
+          use the pending_confirmation cookie
         in: body
         name: token
-        required: true
         schema:
           $ref: '#/definitions/auth.ResendRequest'
       produces:
@@ -1396,7 +1400,7 @@ paths:
           schema:
             $ref: '#/definitions/auth.ResendSuccessResponse'
         "400":
-          description: Malformed JSON body or missing token.
+          description: No pending confirmation cookie or token body was provided.
           schema:
             $ref: '#/definitions/auth.ResendBadRequestResponse'
         "404":

@@ -18,7 +18,7 @@ type RegisterRequest struct {
 
 // Register creates a local account and sends an email confirmation token.
 // @Summary Register
-// @Description Create a user account with email and password (minimum 8 characters). The account stays unconfirmed until the emailed token is validated via GET /confirm, and login is blocked meanwhile. No session is created here.
+// @Description Create a user account with email and password (minimum 8 characters). The account stays unconfirmed until the emailed token is validated via GET /confirm, and login is blocked meanwhile. No authenticated session is created here; a temporary HTTP-only pending_confirmation cookie is set so the browser can call POST /confirm/resend without a body.
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -87,7 +87,7 @@ func Register(c fiber.Ctx) error {
 		PasswordHash:        &hashStr,
 		IsConfirmed:         false,
 		ConfirmationToken:   &token,
-		ConfirmationExpires: ptrTime(time.Now().Add(24 * time.Hour)),
+		ConfirmationExpires: ptrTime(time.Now().Add(confirmationLifetime)),
 	}
 
 	if err := db.Create(&user).Error; err != nil {
@@ -96,6 +96,7 @@ func Register(c fiber.Ctx) error {
 			"message": "Unable to create account",
 		})
 	}
+	setPendingConfirmationCookie(c, token, *user.ConfirmationExpires)
 
 	go sendConfirmationEmail(user.Email, token)
 

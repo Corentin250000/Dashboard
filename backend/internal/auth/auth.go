@@ -13,6 +13,7 @@ import (
 	"dashboard-backend/internal/utils"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/mailjet/mailjet-apiv3-go/v4"
 	"gorm.io/gorm"
@@ -47,6 +48,35 @@ func ptrTime(t time.Time) *time.Time {
 const sessionLifetime = 7 * 24 * time.Hour
 
 const sessionCookieName = "session_id"
+
+const pendingConfirmationCookieName = "pending_confirmation"
+
+const confirmationLifetime = 24 * time.Hour
+
+func setPendingConfirmationCookie(c fiber.Ctx, token string, expiresAt time.Time) {
+	c.Cookie(&fiber.Cookie{
+		Name:     pendingConfirmationCookieName,
+		Value:    token,
+		HTTPOnly: true,
+		Secure:   c.Protocol() == "https",
+		SameSite: "Lax",
+		Path:     "/",
+		Expires:  expiresAt,
+	})
+}
+
+func clearPendingConfirmationCookie(c fiber.Ctx) {
+	c.Cookie(&fiber.Cookie{
+		Name:     pendingConfirmationCookieName,
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   c.Protocol() == "https",
+		SameSite: "Lax",
+		Path:     "/",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+	})
+}
 
 // createSession creates and persists a new session for userID.
 func createSession(userID uuid.UUID) (string, error) {

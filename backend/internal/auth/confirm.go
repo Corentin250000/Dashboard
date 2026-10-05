@@ -53,6 +53,7 @@ func ConfirmHandler(c fiber.Ctx) error {
 	}
 
 	if user.IsConfirmed {
+		clearPendingConfirmationCookie(c)
 		return c.JSON(fiber.Map{"status": "already_confirmed"})
 	}
 	if user.ConfirmationExpires == nil || time.Now().After(*user.ConfirmationExpires) {
@@ -67,6 +68,7 @@ func ConfirmHandler(c fiber.Ctx) error {
 			"message": "database error",
 		})
 	}
+	clearPendingConfirmationCookie(c)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"status": "confirmed"})
 }
