@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"time"
-
 	"dashboard-backend/internal/models"
 
 	"github.com/gofiber/fiber/v3"
@@ -89,15 +87,7 @@ func Login(c fiber.Ctx) error {
 		})
 	}
 
-	c.Cookie(&fiber.Cookie{
-		Name:     sessionCookieName,
-		Value:    sessionID,
-		HTTPOnly: true,
-		Secure:   c.Protocol() == "https",
-		SameSite: "Lax",
-		Path:     "/",
-		Expires:  time.Now().Add(sessionLifetime),
-	})
+	writeSessionCookie(c, sessionID)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Logged in",

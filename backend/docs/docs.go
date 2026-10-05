@@ -927,7 +927,7 @@ const docTemplate = `{
         },
         "/confirm": {
             "get": {
-                "description": "Confirm a user account with the single-use token sent by email (valid 24h). The token is consumed on success; already-confirmed accounts return \"already_confirmed\". No session is created: log in afterwards via POST /auth/login.",
+                "description": "Confirm a user account with the single-use token sent by email (valid 24h). The token is consumed on success and a 7-day session is created automatically; already-confirmed accounts return \"already_confirmed\".",
                 "produces": [
                     "application/json"
                 ],

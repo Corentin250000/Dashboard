@@ -1393,8 +1393,7 @@ paths:
     get:
       description: 'Confirm a user account with the single-use token sent by email
         (valid 24h). The token is consumed on success; already-confirmed accounts
-        return "already_confirmed". No session is created: log in afterwards via POST
-        /auth/login.'
+         return "already_confirmed". A 7-day session is created automatically.'
       parameters:
       - description: Email confirmation token from the confirmation link
         in: query
