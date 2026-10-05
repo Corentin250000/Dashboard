@@ -48,7 +48,7 @@ func Register(c fiber.Ctx) error {
 	if err := validate.Struct(req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Invalid fields",
+			"message": "The email must be valid and the password must be at least 8 characters long",
 		})
 	}
 
