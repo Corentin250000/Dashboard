@@ -45,6 +45,15 @@ func Registry() []Service {
 						{Name: "station", Type: "string"},
 					},
 				},
+				{
+					Name:        "journeys",
+					Description: "Search train journeys between two stations for a given date and time",
+					Params: []Param{
+						{Name: "from", Type: "string"},
+						{Name: "to", Type: "string"},
+						{Name: "datetime", Type: "string"},
+					},
+				},
 			},
 		},
 		{
