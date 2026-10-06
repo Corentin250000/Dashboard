@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import DashboardGrid, { type Layouts } from '../components/DashboardGrid';
-import Card from '../components/Card';
+import WidgetCard from '../components/WidgetCard';
 import { api, ApiError, type WidgetInstance } from '../../shared/api';
 import { buildLayouts } from '../tools/buildLayouts';
+import { WIDGETS } from '../widgets/registry';
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -85,20 +86,26 @@ function DashboardPage() {
           <>
             {error && <p role="alert">{error}</p>}
             <DashboardGrid layouts={layouts} onLayoutChange={setLayouts} onDragStop={moveWidget}>
-              {widgets.map((widget) => (
+              {widgets.map((widget) => {
+              const def = WIDGETS[widget.type];
+              const Widget = def?.component;
+              return (
                 <div key={widget.id}>
-                  <Card
-                    title={widget.type}
+                  <WidgetCard
+                    title={def?.label ?? widget.type}
                     selected={selectedId === widget.id}
-                    onSelect={() => setSelectedId((current) => (current === widget.id ? null : widget.id))}
+                    onSelect={() => setSelectedId((c) => (c === widget.id ? null : widget.id))}
                     onRemove={() => void removeWidget(widget.id)}
                   >
-                    {widget.type === 'sncf.departures'
-                      ? JSON.stringify({ station: widget.config.station, refresh_rate_seconds: widget.refresh_rate_seconds })
-                      : JSON.stringify(widget.config)}
-                  </Card>
+                    {Widget ? (
+                      <Widget config={widget.config} refreshSeconds={widget.refresh_rate_seconds} />
+                    ) : (
+                      <p>Unknown widget type.</p>
+                    )}
+                  </WidgetCard>
                 </div>
-              ))}
+              );
+            })}
             </DashboardGrid>
           </>
         )}
