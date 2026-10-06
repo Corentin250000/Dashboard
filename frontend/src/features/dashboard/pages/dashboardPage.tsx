@@ -3,6 +3,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import { SIZES } from '../tools/Size';
 import { useElementHeight } from '../tools/useElementsHeigh';
+import TopBar from '../components/TopBar';
 
 const ResponsiveGrid = WidthProvider(Responsive);
 
@@ -50,6 +51,10 @@ function DashboardPage() {
       : MOBILE_ROW_HEIGHT;
 
   return (
+    <>
+    <div>
+      <TopBar/>
+    </div>
     <div
       ref={ref}
       style={{ height: '100vh', overflowX: 'hidden', overflowY: 'auto' }}
@@ -75,6 +80,7 @@ function DashboardPage() {
         ))}
       </ResponsiveGrid>
     </div>
+    </>
   );
 }
 

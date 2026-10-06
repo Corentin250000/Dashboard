@@ -27,7 +27,7 @@ export default function ProtectedRoute() {
         </main>
       );
     }
-    return null;
+    return <p role="status">Loading…</p>;
   }
   if (!authenticated) {
     return <Navigate to="/login" replace />;
