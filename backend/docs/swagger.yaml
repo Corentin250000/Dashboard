@@ -698,10 +698,55 @@ definitions:
           $ref: '#/definitions/widgets.SteamFriendStatus'
         type: array
     type: object
-  widgets.SteamFriendsErrorResponse:
+  widgets.SteamFriendsBadGatewayResponse:
     properties:
       message:
-        example: La liste d'amis Steam est privée.
+        example: Steam is temporarily unavailable.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsBadRequestResponse:
+    properties:
+      message:
+        example: The pseudo must contain between 1 and 64 characters.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsPrivateResponse:
+    properties:
+      message:
+        example: The Steam friend list is private.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsServerResponse:
+    properties:
+      message:
+        example: Unable to search Steam friends.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsUnauthorizedResponse:
+    properties:
+      message:
+        example: Authentication required.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsUnavailableResponse:
+    properties:
+      message:
+        example: The Steam friends service is not configured.
         type: string
       status:
         example: error
@@ -1487,24 +1532,28 @@ paths:
           description: Malformed JSON, empty pseudo, pseudo longer than 64 Unicode
             characters, or no Steam account connected.
           schema:
-            $ref: '#/definitions/widgets.SteamFriendsErrorResponse'
+            $ref: '#/definitions/widgets.SteamFriendsBadRequestResponse'
         "401":
           description: The session_id cookie is missing, expired or invalid.
           schema:
-            $ref: '#/definitions/widgets.SteamFriendsErrorResponse'
+            $ref: '#/definitions/widgets.SteamFriendsUnauthorizedResponse'
         "403":
           description: The Steam friend list is private.
           schema:
-            $ref: '#/definitions/widgets.SteamFriendsErrorResponse'
+            $ref: '#/definitions/widgets.SteamFriendsPrivateResponse'
+        "500":
+          description: The local Steam friends data could not be searched or refreshed.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsServerResponse'
         "502":
           description: Steam is unreachable, timed out, returned an unexpected status,
             or returned an invalid response.
           schema:
-            $ref: '#/definitions/widgets.SteamFriendsErrorResponse'
+            $ref: '#/definitions/widgets.SteamFriendsBadGatewayResponse'
         "503":
           description: The Steam friends service is not configured.
           schema:
-            $ref: '#/definitions/widgets.SteamFriendsErrorResponse'
+            $ref: '#/definitions/widgets.SteamFriendsUnavailableResponse'
       summary: Search a Steam friend's status
       tags:
       - Steam

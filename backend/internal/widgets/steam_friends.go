@@ -97,9 +97,34 @@ type SteamCurrentGame struct {
 	Name *string `json:"name,omitempty" example:"Counter-Strike 2"`
 }
 
-type SteamFriendsErrorResponse struct {
+type SteamFriendsBadRequestResponse struct {
 	Status  string `json:"status" example:"error"`
-	Message string `json:"message" example:"La liste d'amis Steam est privée."`
+	Message string `json:"message" example:"The pseudo must contain between 1 and 64 characters."`
+}
+
+type SteamFriendsUnauthorizedResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Authentication required."`
+}
+
+type SteamFriendsPrivateResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"The Steam friend list is private."`
+}
+
+type SteamFriendsBadGatewayResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Steam is temporarily unavailable."`
+}
+
+type SteamFriendsServerResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"Unable to search Steam friends."`
+}
+
+type SteamFriendsUnavailableResponse struct {
+	Status  string `json:"status" example:"error"`
+	Message string `json:"message" example:"The Steam friends service is not configured."`
 }
 
 // Status searches the authenticated user's synchronized Steam friends by pseudo
@@ -111,11 +136,12 @@ type SteamFriendsErrorResponse struct {
 // @Produce json
 // @Param request body SteamFriendStatusRequest true "Pseudo to search (1 to 64 Unicode characters)" example({"pseudo":"chrystoval"})
 // @Success 200 {object} SteamFriendStatusResponse "Matching friends, limited to 10 results. Exact normalized matches are returned first. Example: {\"results\":[{\"steamId\":\"76561198978982665\",\"pseudo\":\"chrystoval\\u2067\\u2067♛\",\"profileVisibility\":\"public\",\"profileConfigured\":true,\"status\":\"En ligne\",\"currentGame\":{\"id\":\"730\",\"name\":\"Counter-Strike 2\"},\"lastLogoff\":\"2026-10-05T19:51:31Z\"}]}"
-// @Failure 400 {object} SteamFriendsErrorResponse "Malformed JSON, empty pseudo, pseudo longer than 64 Unicode characters, or no Steam account connected."
-// @Failure 401 {object} SteamFriendsErrorResponse "The session_id cookie is missing, expired or invalid."
-// @Failure 403 {object} SteamFriendsErrorResponse "The Steam friend list is private."
-// @Failure 502 {object} SteamFriendsErrorResponse "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response."
-// @Failure 503 {object} SteamFriendsErrorResponse "The Steam friends service is not configured."
+// @Failure 400 {object} SteamFriendsBadRequestResponse "Malformed JSON, empty pseudo, pseudo longer than 64 Unicode characters, or no Steam account connected."
+// @Failure 401 {object} SteamFriendsUnauthorizedResponse "The session_id cookie is missing, expired or invalid."
+// @Failure 403 {object} SteamFriendsPrivateResponse "The Steam friend list is private."
+// @Failure 500 {object} SteamFriendsServerResponse "The local Steam friends data could not be searched or refreshed."
+// @Failure 502 {object} SteamFriendsBadGatewayResponse "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response."
+// @Failure 503 {object} SteamFriendsUnavailableResponse "The Steam friends service is not configured."
 // @Router /api/steam/friends/status [post]
 func Status(c fiber.Ctx) error {
 	if db == nil || steamClient == nil {
@@ -248,9 +274,9 @@ func translatedStatus(friend models.SteamFriend) string {
 }
 func steamSyncError(c fiber.Ctx, err error) error {
 	if errors.Is(err, ErrFriendListPrivate) {
-		return steamError(c, fiber.StatusForbidden, "La liste d'amis Steam est privée.")
+		return steamError(c, fiber.StatusForbidden, "The Steam friend list is private.")
 	}
-	return steamError(c, fiber.StatusBadGateway, "Steam est momentanément indisponible.")
+	return steamError(c, fiber.StatusBadGateway, "Steam is temporarily unavailable.")
 }
 func steamError(c fiber.Ctx, status int, message string) error {
 	return c.Status(status).JSON(fiber.Map{"status": "error", "message": message})
