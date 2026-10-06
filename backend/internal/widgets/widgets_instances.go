@@ -160,8 +160,54 @@ func SeedCatalog(database *gorm.DB) error {
 			return err
 		}
 	}
+	spotifyService := models.Service{}
+	if err := database.Where("name = ?", "spotify").First(&spotifyService).Error; err != nil {
+		return err
+	}
+	spotifyWidgets := []struct {
+		name, displayName, description string
+		params                         []models.WidgetParam
+	}{
+		{"currently_playing", "Currently playing", "Display the track currently playing on Spotify", []models.WidgetParam{
+			{Name: "show_progress", Type: "integer", DefaultValue: stringPointer("1")},
+		}},
+		{"top_items", "Top items", "Display the user's top Spotify artists or tracks", []models.WidgetParam{
+			{Name: "item_type", Type: "string", IsRequired: true},
+			{Name: "time_range", Type: "string", IsRequired: true},
+			{Name: "limit", Type: "integer", DefaultValue: stringPointer("5")},
+		}},
+	}
+	for _, data := range spotifyWidgets {
+		widget := models.Widget{}
+		if err := database.Where("service_id = ? AND name = ?", spotifyService.ID, data.name).FirstOrCreate(&widget, models.Widget{
+			ServiceID: spotifyService.ID, Name: data.name, DisplayName: data.displayName, Description: data.description,
+		}).Error; err != nil {
+			return err
+		}
+		if data.name == "currently_playing" {
+			if err := database.Where("widget_id = ? AND name = ?", widget.ID, "layout").Delete(&models.WidgetParam{}).Error; err != nil {
+				return err
+			}
+		}
+		for _, paramData := range data.params {
+			param := models.WidgetParam{}
+			if err := database.Where("widget_id = ? AND name = ?", widget.ID, paramData.Name).FirstOrCreate(&param, models.WidgetParam{
+				WidgetID: widget.ID, Name: paramData.Name, Type: paramData.Type, IsRequired: paramData.IsRequired, DefaultValue: paramData.DefaultValue,
+			}).Error; err != nil {
+				return err
+			}
+		}
+		for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+			allowed := models.WidgetAllowedSize{WidgetID: widget.ID, SizeCode: sizeCode}
+			if err := database.Where("widget_id = ? AND size_code = ?", widget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
+
+func stringPointer(value string) *string { return &value }
 
 // ListWidgets returns the widget instances of the authenticated user.
 // @Summary List dashboard widgets

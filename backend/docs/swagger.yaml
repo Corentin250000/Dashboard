@@ -390,6 +390,33 @@ definitions:
     - size
     - type
     type: object
+  widgets.CurrentlyPlayingResponse:
+    properties:
+      album_name:
+        example: After Hours
+        type: string
+      artists:
+        example:
+        - The Weeknd
+        items:
+          type: string
+        type: array
+      duration_ms:
+        example: 200040
+        type: integer
+      playing:
+        example: true
+        type: boolean
+      progress_ms:
+        example: 42100
+        type: integer
+      spotify_url:
+        example: https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b
+        type: string
+      track_name:
+        example: Blinding Lights
+        type: string
+    type: object
   widgets.ServiceBadRequestResponse:
     properties:
       message:
@@ -570,6 +597,31 @@ definitions:
         example: error
         type: string
     type: object
+  widgets.SpotifyTopItem:
+    properties:
+      artists:
+        example:
+        - The Weeknd
+        items:
+          type: string
+        type: array
+      name:
+        example: Blinding Lights
+        type: string
+      rank:
+        example: 1
+        type: integer
+      spotify_url:
+        example: https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b
+        type: string
+    type: object
+  widgets.SpotifyTopResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/widgets.SpotifyTopItem'
+        type: array
+    type: object
   widgets.TrainStationRequest:
     properties:
       text:
@@ -704,6 +756,18 @@ definitions:
     properties:
       message:
         example: This size is not available for this widget.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.spotifyErrorResponse:
+    properties:
+      code:
+        example: spotify_reauth_required
+        type: string
+      message:
+        example: Reconnect Spotify to use this widget.
         type: string
       status:
         example: error
@@ -1161,6 +1225,105 @@ paths:
       summary: SNCF departures
       tags:
       - SNCF
+  /api/spotify/currently-playing:
+    get:
+      description: Returns the track currently playing for the authenticated Spotify
+        account. When playback is stopped, when no track is active, or when Spotify
+        returns a podcast episode, the response is {"playing":false}.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current track, or playing=false when no supported track is
+            active.
+          schema:
+            $ref: '#/definitions/widgets.CurrentlyPlayingResponse'
+        "401":
+          description: Spotify must be reconnected because the token is invalid, revoked,
+            or lacks the required scope.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+        "403":
+          description: The current user is not subscribed to Spotify.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+        "429":
+          description: Spotify rate limit reached; Retry-After is returned when provided
+            by Spotify.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+        "502":
+          description: Spotify is unavailable or returned an invalid response.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+      summary: Spotify currently playing
+      tags:
+      - Spotify widgets
+  /api/spotify/top:
+    get:
+      description: 'Returns the authenticated user''s top Spotify artists or tracks.
+        Example: /api/spotify/top?item_type=tracks&time_range=long_term&limit=5. If
+        time_range is omitted, medium_term is used.'
+      parameters:
+      - description: Top item type
+        enum:
+        - artists
+        - tracks
+        example: tracks
+        in: query
+        name: item_type
+        required: true
+        type: string
+      - default: medium_term
+        description: Time range used by Spotify
+        enum:
+        - short_term
+        - medium_term
+        - long_term
+        example: medium_term
+        in: query
+        name: time_range
+        type: string
+      - default: 5
+        description: Number of items
+        example: 5
+        in: query
+        maximum: 10
+        minimum: 1
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ranked top artists or tracks.
+          schema:
+            $ref: '#/definitions/widgets.SpotifyTopResponse'
+        "400":
+          description: A query parameter is missing or invalid.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+        "401":
+          description: Spotify must be reconnected because the token is invalid, revoked,
+            or lacks the required scope.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+        "403":
+          description: The current user is not subscribed to Spotify.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+        "429":
+          description: Spotify rate limit reached; Retry-After is returned when provided
+            by Spotify.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+        "502":
+          description: Spotify is unavailable or returned an invalid response.
+          schema:
+            $ref: '#/definitions/widgets.spotifyErrorResponse'
+      summary: Spotify top items
+      tags:
+      - Spotify widgets
   /auth/{provider}:
     get:
       description: Start an OAuth authentication flow for a supported provider. Sets
@@ -1391,9 +1554,9 @@ paths:
       - auth
   /confirm:
     get:
-      description: 'Confirm a user account with the single-use token sent by email
-        (valid 24h). The token is consumed on success; already-confirmed accounts
-         return "already_confirmed". A 7-day session is created automatically.'
+      description: Confirm a user account with the single-use token sent by email
+        (valid 24h). The token is consumed on success and a 7-day session is created
+        automatically; already-confirmed accounts return "already_confirmed".
       parameters:
       - description: Email confirmation token from the confirmation link
         in: query

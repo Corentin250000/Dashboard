@@ -433,6 +433,34 @@ func encryptServiceToken(value string) (string, error) {
 	return base64.RawStdEncoding.EncodeToString(ciphertext), nil
 }
 
+func decryptServiceToken(value string) (string, error) {
+	if value == "" {
+		return "", nil
+	}
+	key, err := serviceEncryptionKey()
+	if err != nil {
+		return "", err
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	ciphertext, err := base64.RawStdEncoding.DecodeString(value)
+	if err != nil || len(ciphertext) < gcm.NonceSize() {
+		return "", errors.New("invalid encrypted service token")
+	}
+	nonce, ciphertext := ciphertext[:gcm.NonceSize()], ciphertext[gcm.NonceSize():]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", errors.New("invalid encrypted service token")
+	}
+	return string(plaintext), nil
+}
+
 func timePointer(value time.Time) *time.Time {
 	if value.IsZero() {
 		return nil

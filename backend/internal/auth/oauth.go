@@ -48,6 +48,8 @@ func ConfigureOAuth() {
 		"http://127.0.0.1:8080/api/me/services/spotify/callback",
 		spotify.ScopeUserReadPrivate,
 		spotify.ScopeUserReadEmail,
+		"user-read-currently-playing",
+		"user-top-read",
 	)
 	serviceSpotifyProvider.SetName("service_spotify")
 	serviceSteamProvider := steam.New(

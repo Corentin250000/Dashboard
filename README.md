@@ -30,6 +30,16 @@ not usable yet — see *Features* below for what is live vs planned.
 | Services & widgets (weather, RSS, GitHub, …) | 🔲 In progress — declared in `backend/internal/about/about.go` (`Registry()`), which is the single source of truth feeding `/about.json` |
 | Per-widget timer refresh | 🔲 Planned |
 
+### Spotify widgets
+
+`spotify.currently_playing` accepts `show_progress` (`0` or `1`).
+`spotify.top_items` accepts `item_type`
+(`artists` or `tracks`), `time_range` (`short_term`, `medium_term` or
+`long_term`), and `limit` from 1 to 10 (default 5). In development, Spotify
+tester accounts must be added to the application's Spotify Developer Dashboard.
+The Spotify scopes used by these widgets were added to the OAuth flow, so users
+who connected Spotify before this change must reconnect their account.
+
 ## Run and use the app
 
 For complete environment and installation instructions, see the [setup guide](SETUP.md).
