@@ -133,7 +133,7 @@ const docTemplate = `{
         },
         "/api/me/services/{service}/callback": {
             "get": {
-                "description": "Complete the Spotify OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received Spotify tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.",
+                "description": "Complete the Spotify or Google OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received OAuth tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.",
                 "produces": [
                     "application/json"
                 ],
@@ -145,6 +145,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "spotify",
+                            "google",
                             "steam"
                         ],
                         "type": "string",
@@ -205,7 +206,7 @@ const docTemplate = `{
         },
         "/api/me/services/{service}/connect": {
             "get": {
-                "description": "Start a third-party connection for Spotify (OAuth 2.0) or Steam (OpenID 2.0 via Goth). Google and GitHub are reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.",
+                "description": "Start a third-party connection for Spotify, Google (OAuth 2.0) or Steam (OpenID 2.0 via Goth). GitHub remains reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.",
                 "produces": [
                     "application/json"
                 ],
@@ -217,6 +218,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "spotify",
+                            "google",
                             "steam"
                         ],
                         "type": "string",
@@ -228,7 +230,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "302": {
-                        "description": "Redirect to the Spotify OAuth 2.0 or Steam OpenID 2.0 authorization page."
+                        "description": "Redirect to the selected service OAuth 2.0 or Steam OpenID 2.0 authorization page."
                     },
                     "400": {
                         "description": "The selected service has auth_type=none and does not need a connection.",

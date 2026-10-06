@@ -36,6 +36,16 @@ func ConfigureOAuth() {
 		"profile",
 		"email",
 	)
+	serviceGoogleProvider := google.New(
+		utils.GetEnv("CLIENT_ID_GOOGLE", ""),
+		utils.GetEnv("CLIENT_SECRET_GOOGLE", ""),
+		"http://127.0.0.1:8080/api/me/services/google/callback",
+		"openid",
+		"profile",
+		"email",
+		"https://www.googleapis.com/auth/calendar.readonly",
+	)
+	serviceGoogleProvider.SetName("service_google")
 	githubProvider := github.New(
 		utils.GetEnv("CLIENT_ID_GITHUB", ""),
 		utils.GetEnv("CLIENT_SECRET_GITHUB", ""),
@@ -60,6 +70,7 @@ func ConfigureOAuth() {
 
 	goth.UseProviders(
 		googleProvider,
+		serviceGoogleProvider,
 		githubProvider,
 		serviceSpotifyProvider,
 		serviceSteamProvider,

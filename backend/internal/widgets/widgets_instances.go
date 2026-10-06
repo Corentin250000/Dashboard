@@ -105,6 +105,12 @@ type WidgetUnavailableResponse struct {
 func SeedCatalog(database *gorm.DB) error {
 	for _, serviceData := range []models.Service{
 		{
+			Name:        "google",
+			DisplayName: "Google",
+			Description: "Google account and calendar data",
+			AuthType:    "oauth2",
+		},
+		{
 			Name:        "spotify",
 			DisplayName: "Spotify",
 			Description: "Spotify account and playback data",
