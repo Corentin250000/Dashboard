@@ -390,6 +390,18 @@ definitions:
     - size
     - type
     type: object
+  widgets.JourneyRequest:
+    properties:
+      datetime:
+        example: 2026-10-03T08:00
+        type: string
+      from:
+        example: Mulhouse
+        type: string
+      to:
+        example: Belfort-Ville
+        type: string
+    type: object
   widgets.ServiceBadRequestResponse:
     properties:
       message:
@@ -541,6 +553,25 @@ definitions:
       departures:
         items:
           $ref: '#/definitions/widgets.SncfDepartureResponse'
+        type: array
+    type: object
+  widgets.SncfJourneyResponse:
+    properties:
+      arrival_time:
+        example: 09:05 (03/10/2026)
+        type: string
+      departure_time:
+        example: 08:12 (03/10/2026)
+        type: string
+      transfers:
+        example: 0
+        type: integer
+    type: object
+  widgets.SncfJourneysResponse:
+    properties:
+      journeys:
+        items:
+          $ref: '#/definitions/widgets.SncfJourneyResponse'
         type: array
     type: object
   widgets.SncfNotFoundResponse:
@@ -1161,6 +1192,54 @@ paths:
       summary: SNCF departures
       tags:
       - SNCF
+  /api/sncf/journeys:
+    post:
+      consumes:
+      - application/json
+      description: 'Searches up to five train journeys between two SNCF stations for
+        a local departure datetime. Station names are matched exactly against the
+        SNCF stop_areas catalog. If Navitia has no solution, the endpoint returns
+        200 with an empty journeys array. Public route: no authentication required.'
+      parameters:
+      - description: 'Journey search request. Example: {\'
+        in: body
+        name: journey
+        required: true
+        schema:
+          $ref: '#/definitions/widgets.JourneyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Up to five journeys. Example: {\"journeys\":[{\"departure_time\":\"08:12
+            (03/10/2026)\",\"arrival_time\":\"09:05 (03/10/2026)\",\"transfers\":0}]}'
+          schema:
+            $ref: '#/definitions/widgets.SncfJourneysResponse'
+        "400":
+          description: Malformed JSON body, missing from/to/datetime field, or datetime
+            not formatted as YYYY-MM-DDTHH:mm.
+          schema:
+            $ref: '#/definitions/widgets.SncfBadRequestResponse'
+        "404":
+          description: The departure or arrival station is not present in the SNCF
+            catalog.
+          schema:
+            $ref: '#/definitions/widgets.SncfNotFoundResponse'
+        "500":
+          description: The station catalog could not be queried.
+          schema:
+            $ref: '#/definitions/widgets.SncfServerErrorResponse'
+        "502":
+          description: SNCF API unreachable, non-2xx response, or invalid payload.
+          schema:
+            $ref: '#/definitions/widgets.SncfBadGatewayResponse'
+        "503":
+          description: The database or API_KEY_SNCF is not configured.
+          schema:
+            $ref: '#/definitions/widgets.SncfUnavailableResponse'
+      summary: SNCF journeys
+      tags:
+      - SNCF
   /auth/{provider}:
     get:
       description: Start an OAuth authentication flow for a supported provider. Sets
@@ -1391,9 +1470,9 @@ paths:
       - auth
   /confirm:
     get:
-      description: 'Confirm a user account with the single-use token sent by email
-        (valid 24h). The token is consumed on success; already-confirmed accounts
-         return "already_confirmed". A 7-day session is created automatically.'
+      description: Confirm a user account with the single-use token sent by email
+        (valid 24h). The token is consumed on success and a 7-day session is created
+        automatically; already-confirmed accounts return "already_confirmed".
       parameters:
       - description: Email confirmation token from the confirmation link
         in: query

@@ -190,6 +190,11 @@ func SetDB(database *gorm.DB) {
 
 // getIdSncfStation returns the Navitia ID for the station name sent by the frontend.
 func getIdSncfStation(stationName string) (string, error) {
+	return getSncfStationID(stationName)
+}
+
+// getSncfStationID returns the Navitia ID for an exact station name.
+func getSncfStationID(stationName string) (string, error) {
 	var station models.SncfStation
 
 	if err := db.Where("name = ?", stationName).Order("id ASC").First(&station).Error; err != nil {
