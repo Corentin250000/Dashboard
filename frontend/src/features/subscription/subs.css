@@ -48,7 +48,8 @@
 
 .sub-icon {
   width: 60px;
-  height: 40px;
+  height: 60px;
+  object-fit: contain;
 }
 
 .subs-name {
@@ -79,4 +80,9 @@
   cursor: pointer;
   background: mediumseagreen;
   color: var(--background);
+}
+
+.subs-connected:disabled {
+  cursor: default;
+  opacity: 1;
 }

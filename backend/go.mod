@@ -10,6 +10,7 @@ require (
 	github.com/mailjet/mailjet-apiv3-go/v4 v4.0.8
 	github.com/markbates/goth v1.82.0
 	github.com/swaggo/swag v1.16.6
+	github.com/zmb3/spotify/v2 v2.4.3
 	golang.org/x/crypto v0.55.0
 	gorm.io/driver/postgres v1.6.3
 	gorm.io/gorm v1.31.2
@@ -48,6 +49,7 @@ require (
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.73.0 // indirect
+	github.com/zmb3/spotify/v2 v2.4.3 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect

@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8080';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8080';
 
 export class ApiError extends Error {
   status: number;
@@ -17,6 +17,8 @@ export type SncfDeparture = {
 };
 
 export type User = { id: string; email: string };
+
+export type ConnectedService = { name: string; connected: boolean };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -52,6 +54,7 @@ export const api = {
             body: JSON.stringify({ email, password }),
           }),
     me: () => request<User>('/auth/me', { method: 'GET' }),
+    getServices: () => request<{ services: ConnectedService[] }>('/api/me/services', { method: 'GET' }),
     logout: () => request<void>('/auth/logout', { method: 'POST' }),
     confirmEmail: (token: string) =>
       request<{ status: 'confirmed' }>(`/confirm?token=${encodeURIComponent(token)}`),
