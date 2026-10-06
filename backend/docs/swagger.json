@@ -618,6 +618,70 @@
                 }
             }
         },
+        "/api/sncf/journeys": {
+            "post": {
+                "description": "Searches up to five train journeys between two SNCF stations for a local departure datetime. Station names are matched exactly against the SNCF stop_areas catalog. If Navitia has no solution, the endpoint returns 200 with an empty journeys array. Public route: no authentication required.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SNCF"
+                ],
+                "summary": "SNCF journeys",
+                "parameters": [
+                    {
+                        "description": "Journey search request. Example: {\\",
+                        "name": "journey",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/widgets.JourneyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Up to five journeys. Example: {\\\"journeys\\\":[{\\\"departure_time\\\":\\\"08:12 (03/10/2026)\\\",\\\"arrival_time\\\":\\\"09:05 (03/10/2026)\\\",\\\"transfers\\\":0}]}",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfJourneysResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Malformed JSON body, missing from/to/datetime field, or datetime not formatted as YYYY-MM-DDTHH:mm.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfBadRequestResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "The departure or arrival station is not present in the SNCF catalog.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfNotFoundResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "The station catalog could not be queried.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfServerErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "SNCF API unreachable, non-2xx response, or invalid payload.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfBadGatewayResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The database or API_KEY_SNCF is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SncfUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/spotify/currently-playing": {
             "get": {
                 "description": "Returns the track currently playing for the authenticated Spotify account. When playback is stopped, when no track is active, or when Spotify returns a podcast episode, the response is {\"playing\":false}.",
@@ -1790,6 +1854,23 @@
                 }
             }
         },
+        "widgets.JourneyRequest": {
+            "type": "object",
+            "properties": {
+                "datetime": {
+                    "type": "string",
+                    "example": "2026-10-03T08:00"
+                },
+                "from": {
+                    "type": "string",
+                    "example": "Mulhouse"
+                },
+                "to": {
+                    "type": "string",
+                    "example": "Belfort-Ville"
+                }
+            }
+        },
         "widgets.ServiceBadRequestResponse": {
             "type": "object",
             "properties": {
@@ -2009,6 +2090,34 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/widgets.SncfDepartureResponse"
+                    }
+                }
+            }
+        },
+        "widgets.SncfJourneyResponse": {
+            "type": "object",
+            "properties": {
+                "arrival_time": {
+                    "type": "string",
+                    "example": "09:05 (03/10/2026)"
+                },
+                "departure_time": {
+                    "type": "string",
+                    "example": "08:12 (03/10/2026)"
+                },
+                "transfers": {
+                    "type": "integer",
+                    "example": 0
+                }
+            }
+        },
+        "widgets.SncfJourneysResponse": {
+            "type": "object",
+            "properties": {
+                "journeys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.SncfJourneyResponse"
                     }
                 }
             }
