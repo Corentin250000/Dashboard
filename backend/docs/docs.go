@@ -133,7 +133,7 @@ const docTemplate = `{
         },
         "/api/me/services/{service}/callback": {
             "get": {
-                "description": "Complete the Spotify OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received Spotify tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.",
+                "description": "Complete the Spotify or Google OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received OAuth tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.",
                 "produces": [
                     "application/json"
                 ],
@@ -145,6 +145,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "spotify",
+                            "google",
                             "steam"
                         ],
                         "type": "string",
@@ -205,7 +206,7 @@ const docTemplate = `{
         },
         "/api/me/services/{service}/connect": {
             "get": {
-                "description": "Start a third-party connection for Spotify (OAuth 2.0) or Steam (OpenID 2.0 via Goth). Google and GitHub are reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.",
+                "description": "Start a third-party connection for Spotify, Google (OAuth 2.0) or Steam (OpenID 2.0 via Goth). GitHub remains reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.",
                 "produces": [
                     "application/json"
                 ],
@@ -217,6 +218,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "spotify",
+                            "google",
                             "steam"
                         ],
                         "type": "string",
@@ -228,7 +230,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "302": {
-                        "description": "Redirect to the Spotify OAuth 2.0 or Steam OpenID 2.0 authorization page."
+                        "description": "Redirect to the selected service OAuth 2.0 or Steam OpenID 2.0 authorization page."
                     },
                     "400": {
                         "description": "The selected service has auth_type=none and does not need a connection.",
@@ -683,6 +685,137 @@ const docTemplate = `{
                         "description": "The database or API_KEY_SNCF is not configured.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/spotify/currently-playing": {
+            "get": {
+                "description": "Returns the track currently playing for the authenticated Spotify account. When playback is stopped, when no track is active, or when Spotify returns a podcast episode, the response is {\"playing\":false}.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spotify widgets"
+                ],
+                "summary": "Spotify currently playing",
+                "responses": {
+                    "200": {
+                        "description": "Current track, or playing=false when no supported track is active.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.CurrentlyPlayingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Spotify must be reconnected because the token is invalid, revoked, or lacks the required scope.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "The current user is not subscribed to Spotify.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Spotify rate limit reached; Retry-After is returned when provided by Spotify.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Spotify is unavailable or returned an invalid response.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/spotify/top": {
+            "get": {
+                "description": "Returns the authenticated user's top Spotify artists or tracks. Example: /api/spotify/top?item_type=tracks\u0026time_range=long_term\u0026limit=5. If time_range is omitted, medium_term is used.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Spotify widgets"
+                ],
+                "summary": "Spotify top items",
+                "parameters": [
+                    {
+                        "enum": [
+                            "artists",
+                            "tracks"
+                        ],
+                        "type": "string",
+                        "example": "tracks",
+                        "description": "Top item type",
+                        "name": "item_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "short_term",
+                            "medium_term",
+                            "long_term"
+                        ],
+                        "type": "string",
+                        "default": "medium_term",
+                        "example": "medium_term",
+                        "description": "Time range used by Spotify",
+                        "name": "time_range",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 10,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 5,
+                        "example": 5,
+                        "description": "Number of items",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ranked top artists or tracks.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SpotifyTopResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "A query parameter is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Spotify must be reconnected because the token is invalid, revoked, or lacks the required scope.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "The current user is not subscribed to Spotify.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Spotify rate limit reached; Retry-After is returned when provided by Spotify.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Spotify is unavailable or returned an invalid response.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.spotifyErrorResponse"
                         }
                     }
                 }
@@ -1755,6 +1888,44 @@ const docTemplate = `{
                 }
             }
         },
+        "widgets.CurrentlyPlayingResponse": {
+            "type": "object",
+            "properties": {
+                "album_name": {
+                    "type": "string",
+                    "example": "After Hours"
+                },
+                "artists": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "The Weeknd"
+                    ]
+                },
+                "duration_ms": {
+                    "type": "integer",
+                    "example": 200040
+                },
+                "playing": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "progress_ms": {
+                    "type": "integer",
+                    "example": 42100
+                },
+                "spotify_url": {
+                    "type": "string",
+                    "example": "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b"
+                },
+                "track_name": {
+                    "type": "string",
+                    "example": "Blinding Lights"
+                }
+            }
+        },
         "widgets.JourneyRequest": {
             "type": "object",
             "properties": {
@@ -2062,6 +2233,43 @@ const docTemplate = `{
                 }
             }
         },
+        "widgets.SpotifyTopItem": {
+            "type": "object",
+            "properties": {
+                "artists": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "The Weeknd"
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Blinding Lights"
+                },
+                "rank": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "spotify_url": {
+                    "type": "string",
+                    "example": "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b"
+                }
+            }
+        },
+        "widgets.SpotifyTopResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.SpotifyTopItem"
+                    }
+                }
+            }
+        },
         "widgets.SteamCurrentGame": {
             "type": "object",
             "properties": {
@@ -2333,6 +2541,23 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "This size is not available for this widget."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.spotifyErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "spotify_reauth_required"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Reconnect Spotify to use this widget."
                 },
                 "status": {
                     "type": "string",

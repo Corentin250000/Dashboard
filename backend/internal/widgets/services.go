@@ -162,11 +162,11 @@ func ListUserServices(c fiber.Ctx) error {
 // StartOAuth starts the OAuth connection flow for a service on behalf of the
 // already authenticated application user.
 // @Summary Connect a service
-// @Description Start a third-party connection for Spotify (OAuth 2.0) or Steam (OpenID 2.0 via Goth). Google and GitHub are reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.
+// @Description Start a third-party connection for Spotify, Google (OAuth 2.0) or Steam (OpenID 2.0 via Goth). GitHub remains reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.
 // @Tags services
 // @Produce json
-// @Param service path string true "Service technical name" Enums(spotify,steam)
-// @Success 302 "Redirect to the Spotify OAuth 2.0 or Steam OpenID 2.0 authorization page."
+// @Param service path string true "Service technical name" Enums(spotify,google,steam)
+// @Success 302 "Redirect to the selected service OAuth 2.0 or Steam OpenID 2.0 authorization page."
 // @Failure 400 {object} ServiceBadRequestResponse "The selected service has auth_type=none and does not need a connection."
 // @Failure 401 {object} ServiceUnauthorizedResponse "The session_id cookie is missing, expired or invalid."
 // @Failure 404 {object} ServiceNotFoundResponse "The service is not present in the catalog, or no Goth provider is registered for it."
@@ -218,10 +218,10 @@ func StartOAuth(c fiber.Ctx) error {
 // OAuthCallback completes a service OAuth connection and stores encrypted
 // access and refresh tokens in user_services.
 // @Summary Complete service connection
-// @Description Complete the Spotify OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received Spotify tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.
+// @Description Complete the Spotify or Google OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received OAuth tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.
 // @Tags services
 // @Produce json
-// @Param service path string true "Service technical name" Enums(spotify,steam)
+// @Param service path string true "Service technical name" Enums(spotify,google,steam)
 // @Param state query string false "OAuth state returned by Spotify; Steam OpenID does not return this parameter"
 // @Param code query string false "Authorization code returned by the provider"
 // @Success 302 "Connection stored; redirect to the frontend /subscription page."
@@ -378,6 +378,8 @@ func serviceProviderName(serviceName string) string {
 
 func serviceProviderConfigured(serviceName string) bool {
 	switch serviceName {
+	case "google":
+		return utils.GetEnv("CLIENT_ID_GOOGLE", "") != "" && utils.GetEnv("CLIENT_SECRET_GOOGLE", "") != ""
 	case "spotify":
 		return utils.GetEnv("CLIENT_ID_SPOTIFY", "") != "" && utils.GetEnv("CLIENT_SECRET_SPOTIFY", "") != ""
 	case "steam":
@@ -440,6 +442,34 @@ func encryptServiceToken(value string) (string, error) {
 	}
 	ciphertext := gcm.Seal(nonce, nonce, []byte(value), nil)
 	return base64.RawStdEncoding.EncodeToString(ciphertext), nil
+}
+
+func decryptServiceToken(value string) (string, error) {
+	if value == "" {
+		return "", nil
+	}
+	key, err := serviceEncryptionKey()
+	if err != nil {
+		return "", err
+	}
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+	ciphertext, err := base64.RawStdEncoding.DecodeString(value)
+	if err != nil || len(ciphertext) < gcm.NonceSize() {
+		return "", errors.New("invalid encrypted service token")
+	}
+	nonce, ciphertext := ciphertext[:gcm.NonceSize()], ciphertext[gcm.NonceSize():]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return "", errors.New("invalid encrypted service token")
+	}
+	return string(plaintext), nil
 }
 
 func timePointer(value time.Time) *time.Time {
