@@ -6,7 +6,17 @@
   --border: #e2e2df;
   --text-primary: #1A1F2B;
   --text-secondary: #6B7280;
-  --accent: #2563eb;
   --text-on-accent: #ffffff;
+  --accent: #2563eb;
   --accent-secondary: #C2410C;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
 }
