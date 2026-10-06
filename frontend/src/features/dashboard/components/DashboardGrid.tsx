@@ -1,5 +1,6 @@
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
+import type { LayoutItem } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import { useElementHeight } from '../tools/useElementsHeigh';
 
@@ -17,10 +18,11 @@ const MOBILE_ROW_HEIGHT = 140;
 type Props = {
   layouts: Layouts;
   onLayoutChange: (all: Layouts) => void;
+  onDragStop?: (id: string, x: number, y: number) => void;
   children: ReactNode;
 };
 
-export default function DashboardGrid({ layouts, onLayoutChange, children }: Props) {
+export default function DashboardGrid({ layouts, onLayoutChange, onDragStop, children }: Props) {
   const [breakpoint, setBreakpoint] = useState('lg');
   const { ref, height } = useElementHeight<HTMLDivElement>();
 
@@ -35,6 +37,9 @@ export default function DashboardGrid({ layouts, onLayoutChange, children }: Pro
         layouts={layouts}
         onLayoutChange={(_current, all) => onLayoutChange(all)}
         onBreakpointChange={(bp) => setBreakpoint(bp)}
+        onDragStop={(_layout, _oldItem, newItem: LayoutItem | null) => {
+          if (breakpoint === 'lg' && newItem) onDragStop?.(newItem.i, newItem.x, newItem.y);
+        }}
         breakpoints={BREAKPOINTS}
         cols={COLS}
         rowHeight={rowHeight}
@@ -44,6 +49,9 @@ export default function DashboardGrid({ layouts, onLayoutChange, children }: Pro
         preventCollision
         compactType={null}
         isResizable={false}
+        isDraggable={breakpoint === 'lg'}
+        draggableHandle=".drag-handle"
+        draggableCancel=".no-drag"
       >
         {children}
       </ResponsiveGrid>

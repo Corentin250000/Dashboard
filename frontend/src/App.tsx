@@ -6,7 +6,6 @@ import VerifyEmailPage from './features/auth/pages/verifyemailpage';
 import SubscriptionPage from './features/subscription/pages/subspage';
 import Dashboard from './features/dashboard/pages/dashboardPage'
 import ProtectedRoute from './features/auth/components/protectedRoute';
-import './App.css'
 
 function App() {
   return (
