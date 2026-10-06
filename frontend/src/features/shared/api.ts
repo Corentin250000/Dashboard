@@ -16,6 +16,8 @@ export type SncfDeparture = {
   cancelled: boolean;
 };
 
+export type User = { id: string; email: string };
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -29,9 +31,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       const body = await response.json();
       if (typeof body.error === 'string') message = body.error;
       else if (typeof body.message === 'string') message = body.message;
-    } catch {}
+    } catch { /* réponse non JSON */ }
     throw new ApiError(message, response.status);
   }
+  if (response.status === 204) return undefined as T;
   return response.json();
 }
 
@@ -48,16 +51,12 @@ export const api = {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           }),
-    me: () => request<Record<string, unknown>>('/auth/me', { method: 'GET' }),
+    me: () => request<User>('/auth/me', { method: 'GET' }),
+    logout: () => request<void>('/auth/logout', { method: 'POST' }),
     confirmEmail: (token: string) =>
-        request<{ status: 'confirmed' | 'already_confirmed' | 'expired' | 'invalid' }>(
-            `/confirm?token=${encodeURIComponent(token)}`,
-            { method: 'GET' }
-    ),
-    resendConfirmation: () =>
-        request<{ status: 'invalid' | 'already_confirmed' }>('/confirm/resend',
-          { method: 'POST' }
-        ),
+      request<{ status: 'confirmed' }>(`/confirm?token=${encodeURIComponent(token)}`),
+    resendConfirmation: () => request<{ status: 'ok' }>('/confirm/resend', { method: 'POST' }),
+    deleteAccount: () => request<{ message: string }>('/api/me/account', { method: 'DELETE' }),
     getSncfDepartures: (station: string) =>
       request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
         { method: 'POST',

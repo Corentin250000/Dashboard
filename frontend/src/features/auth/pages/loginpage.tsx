@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../../shared/api';
+import { api, ApiError } from '../../shared/api';
 import AuthCard from '../components/authCard';
 
 function LoginPage() {
@@ -22,7 +22,13 @@ function LoginPage() {
       .then(() => {
         navigate('/dashboard');
       })
-      .catch(error => setErrorMessage(error.message));
+     .catch((error) => {
+      setErrorMessage(
+        error instanceof ApiError && error.status >= 500
+          ? 'Server unavailable, please try again later.'
+          : error.message
+  );
+});
   };
 
   return (
@@ -74,7 +80,7 @@ function LoginPage() {
           type="submit"
           className="
             mt-2 w-full rounded-lg bg-(--accent) px-3 py-3
-            text-[15px] font-medium text-(--text-secondary)
+            text-[15px] font-medium text-(--text-on-accent)
             transition hover:opacity-90
           "
         >

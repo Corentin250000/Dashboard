@@ -6,6 +6,7 @@
   --border: #e2e2df;
   --text-primary: #1A1F2B;
   --text-secondary: #6B7280;
-  --accent: #3b82f6;
-  --accent-secondary: #D9502F;
+  --accent: #2563eb;
+  --text-on-accent: #ffffff;
+  --accent-secondary: #C2410C;
 }
