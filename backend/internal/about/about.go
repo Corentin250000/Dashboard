@@ -47,6 +47,18 @@ func Registry() []Service {
 				},
 			},
 		},
+		{
+			Name: "steam",
+			Widgets: []Widget{
+				{
+					Name:        "friends",
+					Description: "Display the Steam status of a friend searched by pseudo",
+					Params: []Param{
+						{Name: "pseudo", Type: "string"},
+					},
+				},
+			},
+		},
 	}
 }
 

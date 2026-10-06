@@ -67,6 +67,7 @@ func main() {
 	}
 
 	auth.SetDB(database)
+	widgets.SetClient(widgets.NewSteamClient(utils.GetEnv("API_KEY_STEAM", ""), nil))
 	auth.ConfigureOAuth()
 
 	port := utils.GetEnv("PORT", "8080")
@@ -132,6 +133,7 @@ func main() {
 
 	// Account.
 	api.Delete("/me/account", auth.DeleteAccount)
+	api.Post("/steam/friends/status", widgets.Status)
 
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})

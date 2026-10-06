@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -9,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -308,6 +310,13 @@ func OAuthCallback(c fiber.Ctx) error {
 	}
 	if err := db.Save(&connection).Error; err != nil {
 		return serviceError(c, fiber.StatusInternalServerError, "Unable to persist the service connection.")
+	}
+	if serviceName == "steam" && providerUser.UserID != "" {
+		go func(ownerSteamID string) {
+			if err := SyncFriends(context.Background(), ownerSteamID); err != nil {
+				log.Printf("Steam friends synchronization failed: %v", err)
+			}
+		}(providerUser.UserID)
 	}
 	clearServiceOAuthCookies(c, serviceName)
 	return c.Redirect().To(frontendURL("/subscription"))
