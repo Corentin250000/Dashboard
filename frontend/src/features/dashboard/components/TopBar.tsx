@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserRound } from 'lucide-react';
+import { Plus, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../shared/api';
 
@@ -41,7 +41,7 @@ function TopBar() {
       navigate('/login', { replace: true });
     } catch (e: unknown) {
       if (e instanceof ApiError && e.status === 401) {
-        navigate('/login', { replace: true }); // session expirée
+        navigate('/login', { replace: true });
         return;
       }
       setError('Unable to delete your account. Please try again.');
@@ -49,12 +49,24 @@ function TopBar() {
     }
   };
 
+  const handleSubscription = async () => {
+    navigate('/subscription');
+  };
+
   return (
     <header
       className="flex h-16 w-full items-center justify-end border-b border-(--border) bg-(--card) px-6"
       onKeyDown={(e) => { if (e.key === 'Escape') closeMenu(); }}
     >
-      <div className="relative">
+      <div className="relative flex items-center">
+        <button
+          type="button"
+          aria-label="Add widget"
+          onClick={handleSubscription}
+          className="mr-2 flex size-10 items-center justify-center rounded-full text-(--text-secondary) transition-colors hover:bg-(--background) hover:text-(--text-primary)"
+        >
+          <Plus size={20} aria-hidden="true" />
+        </button>
         <button
           type="button"
           aria-label="Open account menu"

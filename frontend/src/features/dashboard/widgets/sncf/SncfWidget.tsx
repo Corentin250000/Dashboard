@@ -1,60 +1,51 @@
-import { useState } from 'react';
 import { api } from '../../../shared/api';
 import { useTimer } from '../../tools/timer';
-import './sncf.css';
+import type { WidgetProps } from '../registry';
 
-function SncfWidget() {
-  const [station, setStation] = useState('');
-  const [input, setInput] = useState('');
-
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const cleanedInput = input.trim();
-    if (cleanedInput) setStation(cleanedInput);
-  };
+function SncfWidget({ config, refreshSeconds }: WidgetProps) {
+  const station = config.station ?? '';
 
   const { data, error } = useTimer(
     () => api.getSncfDepartures(station),
-    300000,
+    refreshSeconds * 1000,
     station
   );
 
   return (
-    <section className="sncf-widget">
-      <h2 className="sncf-title">{station || 'SNCF'}</h2>
+    <section className="flex flex-col gap-2">
+      <h3 className="text-sm font-medium text-(--text-primary)">{station}</h3>
 
-      <form className="sncf-form" onSubmit={handleSubmit}>
-        <input
-          className="sncf-input"
-          type="text"
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          placeholder="Station name"
-          aria-label="Station name"
-        />
-        <button className="sncf-button" type="submit">Search</button>
-      </form>
+      {error && (
+        <p role="alert" className="text-sm text-(--accent-secondary)">
+          Data unavailable
+        </p>
+      )}
 
-      {!station && <p>Enter a station name to see departures.</p>}
-      {error && <p role="alert" className="sncf-error">Data unavailable</p>}
-
-      <ul className="sncf-list">
+      <ul className="m-0 list-none p-0">
         {data?.departures.map((depart, index) => (
           <li
             key={index}
-            className={`sncf-row ${depart.cancelled ? 'sncf-row--cancelled' : ''}`}
+            className={`grid grid-cols-[3.5rem_1fr_auto] items-center gap-2 border-b border-(--border) py-2 last:border-b-0 ${
+              depart.cancelled ? 'text-(--text-secondary) line-through' : 'text-(--text-primary)'
+            }`}
           >
-            {depart.delay_minutes > 0 ? (
-              <span className="sncf-time-delay">{depart.departure}</span>
-            ) : (
-              <span className="sncf-time">{depart.departure}</span>
-            )}
-            <span className="sncf-dest">{depart.destination}</span>
-            {!depart.cancelled && depart.delay_minutes > 0 && (
-              <span className="sncf-status sncf-status--alert">+{depart.delay_minutes} min</span>
-            )}
+            <span
+              className={`font-medium ${
+                depart.delay_minutes > 0 && !depart.cancelled ? 'text-(--accent-secondary)' : ''
+              }`}
+            >
+              {depart.departure}
+            </span>
+            <span className="truncate">{depart.destination}</span>
             {depart.cancelled && (
-              <span className="sncf-status sncf-status--alert">Cancelled</span>
+              <span className="text-[13px] font-medium text-(--accent-secondary) no-underline">
+                Cancelled
+              </span>
+            )}
+            {!depart.cancelled && depart.delay_minutes > 0 && (
+              <span className="text-[13px] font-medium text-(--accent-secondary)">
+                +{depart.delay_minutes} min
+              </span>
             )}
           </li>
         ))}

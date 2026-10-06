@@ -3,7 +3,6 @@ import GoogleIcon from '../../../assets/icons/google.svg';
 import SpotifyIcon from '../../../assets/icons/spotify.svg';
 import steamIcon from '../../../assets/icons/steam.svg';
 import { api, API_URL } from '../../shared/api';
-import '../subs.css';
 
 // type Sub = {
 //     id: string;
@@ -46,16 +45,16 @@ function SubscriptionPage() {
     };
 
     return (
-        <div className='subs-page'>
-            <h1 className='subs-title'>Choose your subscriptions</h1>
-            <div className='subs-grid'>
+        <div className="min-h-screen px-6 py-8">
+            <h1 className="mb-6 text-center text-2xl font-medium text-(--text-primary)">Choose your subscriptions</h1>
+            <div className="mx-auto grid max-w-270 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
                 {/* GOOGLE */}
-                <div className='subs-card'>
-                    <img className="sub-icon" src={GoogleIcon} alt="google icon" />
-                    <p className='subs-name'>Google</p>
+                <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-(--border) bg-(--card) p-5 text-center">
+                    <img className="h-15 w-15 object-contain" src={GoogleIcon} alt="google icon" />
+                    <p className="text-[25px] font-medium text-(--text-primary)">Google</p>
                     <button
-                        className={googleConnected ? 'subs-connected' : 'subs-connect'}
+                        className={`mt-1.5 rounded-lg border border-(--border) px-3.5 py-1.5 text-[13px] font-medium disabled:opacity-100 ${googleConnected ? 'cursor-default bg-[mediumseagreen]' : 'cursor-pointer bg-(--accent)'} text-(--background)`}
                         type="button"
                         onClick={connectGoogle}
                         disabled={googleConnected}>
@@ -64,11 +63,11 @@ function SubscriptionPage() {
                 </div>
 
                 {/* SPOTIFY */}
-                <div className='subs-card'>
-                    <img className="sub-icon" src={SpotifyIcon} alt="Spotify icon" />
-                    <p className='subs-name'>Spotify</p>
+                <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-(--border) bg-(--card) p-5 text-center">
+                    <img className="h-15 w-15 object-contain" src={SpotifyIcon} alt="Spotify icon" />
+                    <p className="text-[25px] font-medium text-(--text-primary)">Spotify</p>
                     <button
-                        className={spotifyConnected ? 'subs-connected' : 'subs-connect'}
+                        className={`mt-1.5 rounded-lg border border-(--border) px-3.5 py-1.5 text-[13px] font-medium disabled:opacity-100 ${spotifyConnected ? 'cursor-default bg-[mediumseagreen]' : 'cursor-pointer bg-(--accent)'} text-(--background)`}
                         type="button"
                         onClick={connectSpotify}
                         disabled={spotifyConnected}>
@@ -77,11 +76,11 @@ function SubscriptionPage() {
                 </div>
 
                 {/* STEAM */}
-                <div className='subs-card'>
-                    <img className="sub-icon" src={steamIcon} alt="Steam icon" />
-                    <p className='subs-name'>Steam</p>
+                <div className="flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-(--border) bg-(--card) p-5 text-center">
+                    <img className="h-15 w-15 object-contain" src={steamIcon} alt="Steam icon" />
+                    <p className="text-[25px] font-medium text-(--text-primary)">Steam</p>
                     <button
-                        className={steamConnected ? 'subs-connected' : 'subs-connect'}
+                        className={`mt-1.5 rounded-lg border border-(--border) px-3.5 py-1.5 text-[13px] font-medium disabled:opacity-100 ${steamConnected ? 'cursor-default bg-[mediumseagreen]' : 'cursor-pointer bg-(--accent)'} text-(--background)`}
                         type="button"
                         onClick={connectSteam}
                         disabled={steamConnected}>

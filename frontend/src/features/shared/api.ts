@@ -16,6 +16,19 @@ export type SncfDeparture = {
   cancelled: boolean;
 };
 
+export type WidgetSize = 'small' | 'wide' | 'tall' | 'big';
+
+export type WidgetInstance = {
+  id: string;
+  type: string;
+  size: WidgetSize;
+  config: Record<string, string>;
+  refresh_rate_seconds: number;
+  position: { x: number; y: number };
+};
+
+export type WidgetInput = Omit<WidgetInstance, 'id'>;
+
 export type User = { id: string; email: string };
 
 export type ConnectedService = { name: string; connected: boolean };
@@ -65,4 +78,11 @@ export const api = {
         { method: 'POST',
           body: JSON.stringify({ text: station }),
         }),
+    getWidgets: () => request<{ widgets: WidgetInstance[] }>('/api/me/widgets'),
+    createWidget: (w: WidgetInput) =>
+      request<WidgetInstance>('/api/me/widgets', { method: 'POST', body: JSON.stringify(w) }),
+    updateWidget: (id: string, patch: Partial<WidgetInput>) =>
+      request<WidgetInstance>(`/api/me/widgets/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    deleteWidget: (id: string) =>
+      request<void>(`/api/me/widgets/${id}`, { method: 'DELETE' }),
 };
