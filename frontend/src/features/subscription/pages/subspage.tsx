@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import GoogleIcon from '../../../assets/icons/google.svg';
 import SpotifyIcon from '../../../assets/icons/spotify.svg';
+import steamIcon from '../../../assets/icons/steam.svg';
 import { api, API_URL } from '../../shared/api';
 import '../subs.css';
 
@@ -13,6 +14,7 @@ import '../subs.css';
 function SubscriptionPage() {
     const [spotifyConnected, setSpotifyConnected] = useState(false);
     const [googleConnected, setGoogleConnected] = useState(false);
+    const [steamConnected, setSteamConnected] = useState(false);
 
     useEffect(() => {
         api.getServices()
@@ -21,8 +23,14 @@ function SubscriptionPage() {
                 setSpotifyConnected(spotify?.connected ?? false);
                 const google = services.find((service) => service.name === 'google');
                 setGoogleConnected(google?.connected ?? false);
+                const steam = services.find((service) => service.name === 'steam');
+                setSteamConnected(steam?.connected ?? false);
             })
-            .catch(() => setSpotifyConnected(false));
+            .catch(() => {
+                setSpotifyConnected(false);
+                setGoogleConnected(false);
+                setSteamConnected(false);
+            });
     }, []);
 
     const connectSpotify = () => {
@@ -31,6 +39,10 @@ function SubscriptionPage() {
 
     const connectGoogle = () => {
         window.location.assign(`${API_URL}/api/me/services/google/connect`);
+    };
+
+    const connectSteam = () => {
+        window.location.assign(`${API_URL}/api/me/services/steam/connect`);
     };
 
     return (
@@ -61,6 +73,19 @@ function SubscriptionPage() {
                         onClick={connectSpotify}
                         disabled={spotifyConnected}>
                         {spotifyConnected ? 'Connected' : 'Connect'}
+                    </button>
+                </div>
+
+                {/* STEAM */}
+                <div className='subs-card'>
+                    <img className="sub-icon" src={steamIcon} alt="Steam icon" />
+                    <p className='subs-name'>Steam</p>
+                    <button
+                        className={steamConnected ? 'subs-connected' : 'subs-connect'}
+                        type="button"
+                        onClick={connectSteam}
+                        disabled={steamConnected}>
+                        {steamConnected ? 'Connected' : 'Connect'}
                     </button>
                 </div>
             </div>
