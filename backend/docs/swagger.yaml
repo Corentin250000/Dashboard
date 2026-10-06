@@ -653,6 +653,105 @@ definitions:
           $ref: '#/definitions/widgets.SpotifyTopItem'
         type: array
     type: object
+  widgets.SteamCurrentGame:
+    properties:
+      id:
+        example: "730"
+        type: string
+      name:
+        example: Counter-Strike 2
+        type: string
+    type: object
+  widgets.SteamFriendStatus:
+    properties:
+      currentGame:
+        $ref: '#/definitions/widgets.SteamCurrentGame'
+      lastLogoff:
+        example: "2026-10-05T19:51:31Z"
+        type: string
+      profileConfigured:
+        example: true
+        type: boolean
+      profileVisibility:
+        example: public
+        type: string
+      pseudo:
+        example: chrystoval⁧⁧♛
+        type: string
+      status:
+        example: En ligne
+        type: string
+      steamId:
+        example: "76561198978982665"
+        type: string
+    type: object
+  widgets.SteamFriendStatusRequest:
+    properties:
+      pseudo:
+        example: chrystoval
+        type: string
+    type: object
+  widgets.SteamFriendStatusResponse:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/widgets.SteamFriendStatus'
+        type: array
+    type: object
+  widgets.SteamFriendsBadGatewayResponse:
+    properties:
+      message:
+        example: Steam is temporarily unavailable.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsBadRequestResponse:
+    properties:
+      message:
+        example: The pseudo must contain between 1 and 64 characters.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsPrivateResponse:
+    properties:
+      message:
+        example: The Steam friend list is private.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsServerResponse:
+    properties:
+      message:
+        example: Unable to search Steam friends.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsUnauthorizedResponse:
+    properties:
+      message:
+        example: Authentication required.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.SteamFriendsUnavailableResponse:
+    properties:
+      message:
+        example: The Steam friends service is not configured.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
   widgets.TrainStationRequest:
     properties:
       text:
@@ -1405,6 +1504,59 @@ paths:
       summary: Spotify top items
       tags:
       - Spotify widgets
+  /api/steam/friends/status:
+    post:
+      consumes:
+      - application/json
+      description: Search the connected user's Steam friends with a normalized pseudo.
+        The local friend list is synchronized after Steam connection and refreshed
+        when its data is older than two minutes. Directional Unicode control characters
+        are removed only for searching; the original Steam pseudo is returned unchanged.
+      parameters:
+      - description: Pseudo to search (1 to 64 Unicode characters)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/widgets.SteamFriendStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Matching friends, limited to 10 results. Exact normalized
+            matches are returned first. Example: {\"results\":[{\"steamId\":\"76561198978982665\",\"pseudo\":\"chrystoval\\u2067\\u2067♛\",\"profileVisibility\":\"public\",\"profileConfigured\":true,\"status\":\"En
+            ligne\",\"currentGame\":{\"id\":\"730\",\"name\":\"Counter-Strike 2\"},\"lastLogoff\":\"2026-10-05T19:51:31Z\"}]}'
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendStatusResponse'
+        "400":
+          description: Malformed JSON, empty pseudo, pseudo longer than 64 Unicode
+            characters, or no Steam account connected.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsBadRequestResponse'
+        "401":
+          description: The session_id cookie is missing, expired or invalid.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsUnauthorizedResponse'
+        "403":
+          description: The Steam friend list is private.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsPrivateResponse'
+        "500":
+          description: The local Steam friends data could not be searched or refreshed.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsServerResponse'
+        "502":
+          description: Steam is unreachable, timed out, returned an unexpected status,
+            or returned an invalid response.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsBadGatewayResponse'
+        "503":
+          description: The Steam friends service is not configured.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsUnavailableResponse'
+      summary: Search a Steam friend's status
+      tags:
+      - Steam
   /auth/{provider}:
     get:
       description: Start an OAuth authentication flow for a supported provider. Sets

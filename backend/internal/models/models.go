@@ -84,6 +84,23 @@ type UserService struct {
 
 func (UserService) TableName() string { return "user_services" }
 
+type SteamFriend struct {
+	ID                uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	OwnerSteamID      string     `gorm:"type:text;not null;index;uniqueIndex:uq_steam_friends_owner_friend"`
+	FriendSteamID     string     `gorm:"type:text;not null;uniqueIndex:uq_steam_friends_owner_friend"`
+	PersonaName       string     `gorm:"type:text;not null"`
+	SearchName        string     `gorm:"type:text;not null;index"`
+	ProfileVisibility int        `gorm:"type:smallint;not null"`
+	ProfileConfigured bool       `gorm:"not null"`
+	PersonaState      int        `gorm:"type:smallint;not null"`
+	CurrentGameID     *string    `gorm:"type:text"`
+	CurrentGameName   *string    `gorm:"type:text"`
+	LastLogoffAt      *time.Time `gorm:"type:timestamptz"`
+	SyncedAt          time.Time  `gorm:"type:timestamptz;not null;index"`
+}
+
+func (SteamFriend) TableName() string { return "steam_friends" }
+
 /*
 Widget is one entry of the per-service widget catalog.
 Declared params live in WidgetParam; valid types: "integer", "string"
@@ -164,6 +181,7 @@ func All() []any {
 		&Service{},
 		&SncfStation{},
 		&UserService{},
+		&SteamFriend{},
 		&Widget{},
 		&WidgetSize{},
 		&WidgetAllowedSize{},

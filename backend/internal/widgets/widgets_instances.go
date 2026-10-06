@@ -166,6 +166,34 @@ func SeedCatalog(database *gorm.DB) error {
 			return err
 		}
 	}
+	steamService := models.Service{}
+	if err := database.Where("name = ?", "steam").First(&steamService).Error; err != nil {
+		return err
+	}
+	steamWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", steamService.ID, "friends").FirstOrCreate(&steamWidget, models.Widget{
+		ServiceID:   steamService.ID,
+		Name:        "friends",
+		DisplayName: "Steam friend status",
+		Description: "Display the Steam status of a friend searched by pseudo",
+	}).Error; err != nil {
+		return err
+	}
+	if err := database.Where("widget_id = ? AND name = ?", steamWidget.ID, "pseudo").FirstOrCreate(&models.WidgetParam{}, models.WidgetParam{
+		WidgetID:     steamWidget.ID,
+		Name:         "pseudo",
+		Type:         "string",
+		IsRequired:   true,
+		DefaultValue: nil,
+	}).Error; err != nil {
+		return err
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: steamWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", steamWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
+		}
+	}
 	spotifyService := models.Service{}
 	if err := database.Where("name = ?", "spotify").First(&spotifyService).Error; err != nil {
 		return err
