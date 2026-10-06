@@ -129,6 +129,8 @@ func main() {
 	api.Get("/me/services/:service/connect", widgets.StartOAuth)
 	api.Get("/me/services/:service/callback", widgets.OAuthCallback)
 	api.Delete("/me/services/:service/connection", widgets.Disconnect)
+	api.Get("/spotify/top", widgets.GetSpotifyTopItems)
+	api.Get("/spotify/currently-playing", widgets.GetSpotifyCurrentlyPlaying)
 
 	// Account.
 	api.Delete("/me/account", auth.DeleteAccount)

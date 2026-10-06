@@ -45,6 +45,30 @@ func Registry() []Service {
 						{Name: "station", Type: "string"},
 					},
 				},
+				{
+					Name:        "journeys",
+					Description: "Search train journeys between two stations for a given date and time",
+					Params: []Param{
+						{Name: "from", Type: "string"},
+						{Name: "to", Type: "string"},
+						{Name: "datetime", Type: "string"},
+					},
+				},
+			},
+		},
+		{
+			Name: "spotify",
+			Widgets: []Widget{
+				{
+					Name:        "currently_playing",
+					Description: "Display the track currently playing on Spotify; show_progress accepts 0 or 1.",
+					Params:      []Param{{Name: "show_progress", Type: "integer"}},
+				},
+				{
+					Name:        "top_items",
+					Description: "Display the user's top Spotify artists or tracks; item_type accepts artists or tracks, time_range accepts short_term, medium_term or long_term (default medium_term), and limit accepts 1 to 10 (default 5).",
+					Params:      []Param{{Name: "item_type", Type: "string"}, {Name: "time_range", Type: "string"}, {Name: "limit", Type: "integer"}},
+				},
 			},
 		},
 	}
