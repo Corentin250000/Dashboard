@@ -19,6 +19,7 @@ export default function WidgetCard({
   children,
 }: Props) {
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.target !== event.currentTarget) return;
     if ((event.key === 'Enter' || event.key === ' ') && onSelect) {
       event.preventDefault();
       onSelect();
