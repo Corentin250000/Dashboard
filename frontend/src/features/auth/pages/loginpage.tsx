@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { api, ApiError } from '../../shared/api';
+import { api, ApiError, API_URL } from '../../shared/api';
 import AuthCard from '../components/authCard';
+import googleIcon from '../../../assets/icons/google.svg';
+import githubIcon from '../../../assets/icons/github.svg';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -93,6 +95,31 @@ function LoginPage() {
           </p>
         )}
       </form>
+
+      <div className="my-5 flex items-center gap-3 text-xs text-(--text-secondary)">
+        <span className="h-px flex-1 bg-(--border)" />
+        <span>or continue with</span>
+        <span className="h-px flex-1 bg-(--border)" />
+      </div>
+
+      <div className="flex gap-3">
+        <a
+          href={`${API_URL}/auth/google`}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) bg-(--card) px-3 py-2.5 text-sm font-medium text-(--text-primary) transition hover:bg-(--background)"
+          aria-label="Continue with Google"
+        >
+          <img src={googleIcon} alt="" className="h-5 w-5" aria-hidden="true" />
+          Google
+        </a>
+        <a
+          href={`${API_URL}/auth/github`}
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) bg-(--card) px-3 py-2.5 text-sm font-medium text-(--text-primary) transition hover:bg-(--background)"
+          aria-label="Continue with GitHub"
+        >
+          <img src={githubIcon} alt="" className="h-5 w-5" aria-hidden="true" />
+          GitHub
+        </a>
+      </div>
 
       <p className="mt-5 text-center text-sm text-(--text-secondary)">
         Don't have an account?{' '}
