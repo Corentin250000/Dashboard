@@ -25,16 +25,21 @@ function SncfWidget({ config, refreshSeconds }: WidgetProps) {
         {data?.departures.map((depart, index) => (
           <li
             key={index}
-            className={`grid grid-cols-[3.5rem_1fr_auto] items-center gap-2 border-b border-(--border) py-2 last:border-b-0 ${
+            className={`grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-(--border) py-2 last:border-b-0 ${
               depart.cancelled ? 'text-(--text-secondary) line-through' : 'text-(--text-primary)'
             }`}
           >
-            <span
-              className={`font-medium ${
-                depart.delay_minutes > 0 && !depart.cancelled ? 'text-(--accent-secondary)' : ''
-              }`}
-            >
-              {depart.departure}
+            <span className="flex items-center gap-1 whitespace-nowrap font-medium">
+              {depart.delay_minutes > 0 && !depart.cancelled && (
+                <span className="text-(--text-secondary) line-through">
+                  {depart.scheduled_departure}
+                </span>
+              )}
+              <span
+                className={depart.delay_minutes > 0 && !depart.cancelled ? 'text-(--accent-secondary)' : ''}
+              >
+                {depart.departure}
+              </span>
             </span>
             <span className="truncate">{depart.destination}</span>
             {depart.cancelled && (

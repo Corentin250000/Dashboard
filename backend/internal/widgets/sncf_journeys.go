@@ -134,8 +134,8 @@ func getSncfJourneys(ctx context.Context, fromID, toID string, datetime time.Tim
 // @Tags SNCF
 // @Accept json
 // @Produce json
-// @Param journey body JourneyRequest true "Journey search request. Example: {\"from\":\"Mulhouse\",\"to\":\"Belfort-Ville\",\"datetime\":\"2026-10-03T08:00\"}"
-// @Success 200 {object} SncfJourneysResponse "Up to five journeys. Example: {\"journeys\":[{\"departure_time\":\"08:12 (03/10/2026)\",\"arrival_time\":\"09:05 (03/10/2026)\",\"transfers\":0}]}"
+// @Param journey body JourneyRequest true "Journey search request."
+// @Success 200 {object} SncfJourneysResponse "Up to five journeys."
 // @Failure 400 {object} SncfBadRequestResponse "Malformed JSON body, missing from/to/datetime field, or datetime not formatted as YYYY-MM-DDTHH:mm."
 // @Failure 404 {object} SncfNotFoundResponse "The departure or arrival station is not present in the SNCF catalog."
 // @Failure 500 {object} SncfServerErrorResponse "The station catalog could not be queried."

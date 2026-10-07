@@ -1368,7 +1368,7 @@ paths:
         SNCF stop_areas catalog. If Navitia has no solution, the endpoint returns
         200 with an empty journeys array. Public route: no authentication required.'
       parameters:
-      - description: 'Journey search request. Example: {\'
+      - description: Journey search request.
         in: body
         name: journey
         required: true
@@ -1378,8 +1378,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: 'Up to five journeys. Example: {\"journeys\":[{\"departure_time\":\"08:12
-            (03/10/2026)\",\"arrival_time\":\"09:05 (03/10/2026)\",\"transfers\":0}]}'
+          description: Up to five journeys.
           schema:
             $ref: '#/definitions/widgets.SncfJourneysResponse'
         "400":

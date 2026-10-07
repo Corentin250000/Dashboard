@@ -635,7 +635,7 @@
                 "summary": "SNCF journeys",
                 "parameters": [
                     {
-                        "description": "Journey search request. Example: {\\",
+                        "description": "Journey search request.",
                         "name": "journey",
                         "in": "body",
                         "required": true,
@@ -646,7 +646,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Up to five journeys. Example: {\\\"journeys\\\":[{\\\"departure_time\\\":\\\"08:12 (03/10/2026)\\\",\\\"arrival_time\\\":\\\"09:05 (03/10/2026)\\\",\\\"transfers\\\":0}]}",
+                        "description": "Up to five journeys.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfJourneysResponse"
                         }
