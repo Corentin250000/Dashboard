@@ -22,6 +22,23 @@ export type SncfJourney = {
   transfers: number;
 };
 
+export type SpotifyCurrentlyPlaying = {
+  playing: boolean;
+  track_name?: string;
+  artists?: string[];
+  album_name?: string;
+  progress_ms?: number;
+  duration_ms?: number;
+  spotify_url?: string;
+};
+
+export type SpotifyTopItem = {
+  name: string;
+  artists?: string[];
+  spotify_url: string;
+  rank: number;
+};
+
 export type WidgetSize = 'small' | 'wide' | 'tall' | 'big';
 
 export type WidgetInstance = {
@@ -33,7 +50,9 @@ export type WidgetInstance = {
   position: { x: number; y: number };
 };
 
-export type WidgetInput = Omit<WidgetInstance, 'id'>;
+export type WidgetInput = Omit<WidgetInstance, 'id' | 'config'> & {
+  config: Record<string, string | number>;
+};
 
 export type User = { id: string; email: string };
 
@@ -89,6 +108,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ from, to, datetime }),
       }),
+    getSpotifyCurrentlyPlaying: () =>
+      request<SpotifyCurrentlyPlaying>('/api/spotify/currently-playing'),
+    getSpotifyTopItems: (itemType: string, timeRange: string) => {
+      const query = new URLSearchParams({ item_type: itemType, time_range: timeRange });
+      return request<{ items: SpotifyTopItem[] }>(`/api/spotify/top?${query.toString()}`);
+    },
     getWidgets: () => request<{ widgets: WidgetInstance[] }>('/api/me/widgets'),
     createWidget: (w: WidgetInput) =>
       request<WidgetInstance>('/api/me/widgets', { method: 'POST', body: JSON.stringify(w) }),

@@ -20,6 +20,7 @@ function DashboardPage() {
   const layouts = useMemo(() => buildLayouts(widgets), [widgets]);
   const [gridKey, setGridKey] = useState(0);
   const [notice, setNotice] = useState('');
+  const [connectedServices, setConnectedServices] = useState<string[]>([]);
   const dismissNotice = useCallback(() => setNotice(''), []);
 
   const loadWidgets = useCallback(async () => {
@@ -40,6 +41,14 @@ function DashboardPage() {
   }, [navigate]);
 
   useEffect(() => { void loadWidgets(); }, [loadWidgets]);
+
+  useEffect(() => {
+    api.getServices()
+      .then((response) => setConnectedServices(
+        response.services.filter((service) => service.connected).map((service) => service.name),
+      ))
+      .catch(() => setConnectedServices([]));
+  }, []);
 
   const removeWidget = async (id: string) => {
   try {
@@ -138,8 +147,7 @@ const moveWidget = async (id: string, x: number, y: number) => {
           forgetWidget(id);
           setNotice('This widget no longer exists.')
         }}
-        // TODO: Populate from GET /api/me/services once that endpoint is active.
-        connectedServices={[]}
+        connectedServices={connectedServices}
       />
       <Notifications message={notice} onClose={dismissNotice} />
     </div>
