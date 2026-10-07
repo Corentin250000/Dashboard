@@ -2,7 +2,7 @@ import { api } from '../../../shared/api';
 import { useTimer } from '../../tools/timer';
 import type { WidgetProps } from '../registry';
 
-function SncfWidget({ config, refreshSeconds }: WidgetProps) {
+function SncfDeparturesWidget({ config, refreshSeconds }: WidgetProps) {
   const station = config.station ?? '';
 
   const { data, error } = useTimer(
@@ -59,4 +59,4 @@ function SncfWidget({ config, refreshSeconds }: WidgetProps) {
   );
 }
 
-export default SncfWidget;
+export default SncfDeparturesWidget;

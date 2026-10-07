@@ -16,6 +16,12 @@ export type SncfDeparture = {
   cancelled: boolean;
 };
 
+export type SncfJourney = {
+  departure_time: string;
+  arrival_time: string;
+  transfers: number;
+};
+
 export type WidgetSize = 'small' | 'wide' | 'tall' | 'big';
 
 export type WidgetInstance = {
@@ -78,6 +84,11 @@ export const api = {
         { method: 'POST',
           body: JSON.stringify({ text: station }),
         }),
+    getSncfJourneys: (from: string, to: string, datetime: string) =>
+      request<{ journeys: SncfJourney[] }>('/api/sncf/journeys', {
+        method: 'POST',
+        body: JSON.stringify({ from, to, datetime }),
+      }),
     getWidgets: () => request<{ widgets: WidgetInstance[] }>('/api/me/widgets'),
     createWidget: (w: WidgetInput) =>
       request<WidgetInstance>('/api/me/widgets', { method: 'POST', body: JSON.stringify(w) }),

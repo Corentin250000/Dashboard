@@ -170,6 +170,34 @@ func SeedCatalog(database *gorm.DB) error {
 			return err
 		}
 	}
+
+	journeysWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", service.ID, "journeys").FirstOrCreate(&journeysWidget, models.Widget{
+		ServiceID:   service.ID,
+		Name:        "journeys",
+		DisplayName: "Journeys",
+		Description: "Search train journeys between two stations for a given date and time",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct{ name, paramType string }{
+		{name: "from", paramType: "string"},
+		{name: "to", paramType: "string"},
+		{name: "datetime", paramType: "string"},
+	} {
+		param := models.WidgetParam{}
+		if err := database.Where("widget_id = ? AND name = ?", journeysWidget.ID, paramData.name).FirstOrCreate(&param, models.WidgetParam{
+			WidgetID: journeysWidget.ID, Name: paramData.name, Type: paramData.paramType, IsRequired: true,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: journeysWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", journeysWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
+		}
+	}
 	steamService := models.Service{}
 	if err := database.Where("name = ?", "steam").First(&steamService).Error; err != nil {
 		return err

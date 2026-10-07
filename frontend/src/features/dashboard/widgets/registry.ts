@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import type { WidgetSize } from '../../shared/api';
-import SncfWidget from './sncf/SncfWidget';
+import SncfDeparturesWidget from './sncf/SncfDeparturesWidget';
+import SncfJourneysWidget from './sncf/SncfJourneysWidget';
 
 export type WidgetProps = {
   config: Record<string, string>;
@@ -22,9 +23,22 @@ export const WIDGETS: Record<string, WidgetDefinition> = {
     label: 'Train departures',
     service: 'sncf',
     requiresAccount: false,
-    component: SncfWidget,
+    component: SncfDeparturesWidget,
     allowedSizes: ['big'],
     defaultRefreshSeconds: 60,
     params: [{ name: 'station', type: 'string', label: 'Station' }],
+  },
+  'sncf.journeys': {
+    label: 'Train journeys',
+    service: 'sncf',
+    requiresAccount: false,
+    component: SncfJourneysWidget,
+    allowedSizes: ['tall', 'big'],
+    defaultRefreshSeconds: 60,
+    params: [
+      { name: 'from', type: 'string', label: 'Departure station' },
+      { name: 'to', type: 'string', label: 'Arrival station' },
+      { name: 'datetime', type: 'string', label: 'Departure date and time (DD/MM/YYYY, HH:mm)' },
+    ],
   },
 };
