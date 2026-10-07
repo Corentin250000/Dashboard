@@ -11,11 +11,23 @@ type Props = {
   widgets: WidgetInstance[];
   onCreated: (widget: WidgetInstance) => void;
   connectedServices: string[];
+  editing?: WidgetInstance;
+  onSaved?: (widget: WidgetInstance) => void;
+  onGone?: (id: string) => void;
 };
 
 const SIZES_ORDER: WidgetSize[] = ['small', 'wide', 'tall', 'big'];
 
-export default function AddWidgetModal({ open, onClose, widgets, onCreated, connectedServices }: Props) {
+export default function AddWidgetModal({
+  open,
+  onClose,
+  widgets,
+  onCreated,
+  connectedServices,
+  editing,
+  onSaved,
+  onGone,
+}: Props) {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<[string, WidgetDefinition] | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -23,17 +35,41 @@ export default function AddWidgetModal({ open, onClose, widgets, onCreated, conn
   const [size, setSize] = useState<WidgetSize>('small');
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
+  const [configurationUnavailable, setConfigurationUnavailable] = useState(false);
+  const failureMessage = editing
+  ? 'Unable to save this widget. Please try again.'
+  : 'Unable to add this widget. Please try again.';
 
   useEffect(() => {
     if (open) {
-      setSelected(null);
-      setValues({});
-      setRefreshSeconds('');
-      setSize('small');
-      setError('');
       setAdding(false);
+      setError('');
+      setConfigurationUnavailable(false);
+      if (editing) {
+        const definition = WIDGETS[editing.type];
+        if (!definition) {
+          setSelected(null);
+          setValues({});
+          setRefreshSeconds('');
+          setConfigurationUnavailable(true);
+          setError('This widget can no longer be configured.');
+        } else {
+          setSelected([editing.type, definition]);
+          setValues(Object.fromEntries(definition.params.map((param) => [
+            param.name,
+            editing.config[param.name] ?? '',
+          ])));
+          setRefreshSeconds(String(editing.refresh_rate_seconds));
+          setSize(editing.size);
+        }
+      } else {
+        setSelected(null);
+        setValues({});
+        setRefreshSeconds('');
+        setSize('small');
+      }
     }
-  }, [open]);
+  }, [open, editing]);
 
   const chooseWidget = (key: string, definition: WidgetDefinition) => {
     setSelected([key, definition]);
@@ -57,13 +93,6 @@ export default function AddWidgetModal({ open, onClose, widgets, onCreated, conn
       return;
     }
 
-    const spot = findFreeSpot(widgets, size);
-    if (!spot) {
-      setError('No space left on your dashboard.');
-      return;
-    }
-
-    // The backend config contract uses strings, including integer parameters; confirm this with the backend.
     const config = Object.fromEntries(definition.params.map((param) => [
       param.name,
       param.type === 'integer' ? String(Number(values[param.name])) : values[param.name].trim(),
@@ -72,14 +101,28 @@ export default function AddWidgetModal({ open, onClose, widgets, onCreated, conn
     setError('');
     setAdding(true);
     try {
-      const created = await api.createWidget({
-        type,
-        size,
-        config,
-        refresh_rate_seconds: refresh,
-        position: spot,
-      });
-      onCreated(created);
+      if (editing) {
+        const updated = await api.updateWidget(editing.id, {
+          config,
+          refresh_rate_seconds: refresh,
+        });
+        onSaved?.(updated);
+      } else {
+        const spot = findFreeSpot(widgets, size);
+        if (!spot) {
+          setError('No space left on your dashboard.');
+          setAdding(false);
+          return;
+        }
+        const created = await api.createWidget({
+          type,
+          size,
+          config,
+          refresh_rate_seconds: refresh,
+          position: spot,
+        });
+        onCreated(created);
+      }
       onClose();
     } catch (cause) {
       if (cause instanceof ApiError) {
@@ -89,11 +132,18 @@ export default function AddWidgetModal({ open, onClose, widgets, onCreated, conn
         }
         if (cause.status === 409) setError('This spot is already taken.');
         else if (cause.status === 422) setError(cause.message);
-        else if (cause.status === 404) setError('This widget is no longer available.');
+        else if (cause.status === 404) {
+        if (editing) {
+          onGone?.(editing.id);
+          onClose();
+          return;
+        }
+        setError('This widget is no longer available.');
+      }
         else if (cause.status === 403) setError('Connect this service first.');
-        else setError('Unable to add this widget. Please try again.');
+        else setError(failureMessage);
       } else {
-        setError('Unable to add this widget. Please try again.');
+        setError(failureMessage);
       }
     } finally {
       setAdding(false);
@@ -105,7 +155,9 @@ export default function AddWidgetModal({ open, onClose, widgets, onCreated, conn
       <DialogBackdrop className="fixed inset-0 bg-black/40" />
       <div className="fixed inset-0 flex items-center justify-center overflow-y-auto p-4">
         <DialogPanel className="w-full max-w-lg rounded-xl border border-(--border) bg-(--card) p-6 text-(--text-primary) shadow-xl">
-          <DialogTitle className="mb-5 text-xl font-semibold">Add widget</DialogTitle>
+          <DialogTitle className="mb-5 text-xl font-semibold">
+            {editing ? 'Configure widget' : 'Add widget'}
+          </DialogTitle>
 
           {error && (
             <p role="alert" className="mb-4 text-sm text-(--accent-secondary)">
@@ -116,7 +168,7 @@ export default function AddWidgetModal({ open, onClose, widgets, onCreated, conn
             </p>
           )}
 
-          {!selected ? (
+          {configurationUnavailable ? null : !selected ? (
             <div className="space-y-3">
               <ul className="space-y-2">
                 {Object.entries(WIDGETS).map(([key, definition]) => {
@@ -198,15 +250,17 @@ export default function AddWidgetModal({ open, onClose, widgets, onCreated, conn
               )}
 
               <div className="flex justify-between gap-2 pt-2">
-                <button type="button" disabled={adding} onClick={() => { setSelected(null); setError(''); }} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background) disabled:opacity-50">
-                  Back
-                </button>
+                {editing ? <span /> : (
+                  <button type="button" disabled={adding} onClick={() => { setSelected(null); setError(''); }} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background) disabled:opacity-50">
+                    Back
+                  </button>
+                )}
                 <div className="flex gap-2">
                   <button type="button" disabled={adding} onClick={onClose} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background) disabled:opacity-50">
                     Cancel
                   </button>
                   <button type="submit" disabled={adding} className="rounded-md bg-(--accent) px-4 py-2 text-sm font-medium text-(--text-on-accent) disabled:opacity-50">
-                    {adding ? 'Adding…' : 'Add'}
+                    {editing ? (adding ? 'Saving…' : 'Save') : (adding ? 'Adding…' : 'Add')}
                   </button>
                 </div>
               </div>
