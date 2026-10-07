@@ -1,13 +1,26 @@
 import { useEffect, useState } from 'react';
+import {
+  Dialog, DialogBackdrop, DialogPanel, DialogTitle,
+  Menu, MenuButton, MenuItem, MenuItems,
+} from '@headlessui/react';
 import { Plus, UserRound } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../shared/api';
 
-function TopBar() {
+type Props = {
+  onAddWidget: () => void;
+  onNotify?: (message: string) => void;
+};
+
+const iconButton =
+  'flex size-10 items-center justify-center rounded-full text-(--text-secondary) transition-colors hover:bg-(--background) hover:text-(--text-primary) focus-visible:ring-2 focus-visible:ring-(--accent)';
+const itemClass =
+  'block w-full rounded-md px-3 py-2 text-left text-sm data-focus:bg-(--background)';
+
+function TopBar({ onAddWidget, onNotify }: Props) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,19 +30,12 @@ function TopBar() {
       .catch(() => setEmail(''));
   }, []);
 
-  const closeMenu = () => {
-    setMenuOpen(false);
-    setConfirmDelete(false);
-    setError('');
-  };
-
   const handleLogout = async () => {
-    setError('');
     try {
       await api.logout();
       navigate('/login', { replace: true });
     } catch {
-      setError('Logout failed. Please try again.');
+      onNotify?.('Logout failed. Please try again.');
     }
   };
 
@@ -39,8 +45,8 @@ function TopBar() {
     try {
       await api.deleteAccount();
       navigate('/login', { replace: true });
-    } catch (e: unknown) {
-      if (e instanceof ApiError && e.status === 401) {
+    } catch (cause: unknown) {
+      if (cause instanceof ApiError && cause.status === 401) {
         navigate('/login', { replace: true });
         return;
       }
@@ -49,91 +55,77 @@ function TopBar() {
     }
   };
 
-  const handleSubscription = async () => {
-    navigate('/subscription');
-  };
-
   return (
-    <header
-      className="flex h-16 w-full items-center justify-end border-b border-(--border) bg-(--card) px-6"
-      onKeyDown={(e) => { if (e.key === 'Escape') closeMenu(); }}
-    >
-      <div className="relative flex items-center">
-        <button
-          type="button"
-          aria-label="Add widget"
-          onClick={handleSubscription}
-          className="mr-2 flex size-10 items-center justify-center rounded-full text-(--text-secondary) transition-colors hover:bg-(--background) hover:text-(--text-primary)"
-        >
-          <Plus size={20} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          aria-label="Open account menu"
-          aria-expanded={menuOpen}
-          onClick={() => (menuOpen ? closeMenu() : setMenuOpen(true))}
-          className="flex size-10 items-center justify-center rounded-full text-(--text-secondary) transition-colors hover:bg-(--background) hover:text-(--text-primary)"
-        >
+    <header className="flex h-16 w-full items-center justify-end gap-2 border-b border-(--border) bg-(--card) px-6">
+      <button type="button" aria-label="Add widget" onClick={onAddWidget} className={iconButton}>
+        <Plus size={20} aria-hidden="true" />
+      </button>
+
+      <Menu>
+        <MenuButton aria-label="Open account menu" className={iconButton}>
           <UserRound size={20} aria-hidden="true" />
-        </button>
+        </MenuButton>
+        <MenuItems
+          anchor="bottom end"
+          className="z-40 min-w-56 rounded-lg border border-(--border) bg-(--card) p-2 shadow-lg [--anchor-gap:0.5rem] focus:outline-none"
+        >
+          <p className="truncate px-3 py-2 text-sm text-(--text-secondary)">
+            {email || 'User account'}
+          </p>
+          <MenuItem>
+            <Link to="/subscription" className={`${itemClass} text-(--text-primary)`}>
+              Manage services
+            </Link>
+          </MenuItem>
+          <MenuItem>
+            <button type="button" onClick={() => void handleLogout()} className={`${itemClass} text-(--text-primary)`}>
+              Log out
+            </button>
+          </MenuItem>
+          <MenuItem>
+            <button
+              type="button"
+              onClick={() => { setError(''); setConfirmOpen(true); }}
+              className={`${itemClass} text-(--accent-secondary)`}
+            >
+              Delete account
+            </button>
+          </MenuItem>
+        </MenuItems>
+      </Menu>
 
-        {menuOpen && (
-          <div className="absolute right-0 top-full z-10 mt-2 min-w-56 rounded-lg border border-(--border) bg-(--card) p-3 shadow-lg">
-            <p className="mb-3 truncate text-sm text-(--text-secondary)">
-              {email || 'User account'}
+      <Dialog open={confirmOpen} onClose={() => { if (!deleting) setConfirmOpen(false); }} className="relative z-50">
+        <DialogBackdrop className="fixed inset-0 bg-black/40" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel className="w-full max-w-sm rounded-xl border border-(--border) bg-(--card) p-6 text-(--text-primary) shadow-xl">
+            <DialogTitle className="mb-3 text-lg font-semibold">Delete account</DialogTitle>
+            <p className="mb-4 text-sm">
+              This will permanently delete your account and all your data. This cannot be undone.
             </p>
-
             {error && (
-              <p role="alert" className="mb-3 text-sm text-(--accent-secondary)">
-                {error}
-              </p>
+              <p role="alert" className="mb-3 text-sm text-(--accent-secondary)">{error}</p>
             )}
-
-            {!confirmDelete ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm text-(--text-primary) hover:bg-(--background)"
-                >
-                  Log out
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="w-full rounded-md px-3 py-2 text-left text-sm text-(--accent-secondary) hover:bg-(--background)"
-                >
-                  Delete account
-                </button>
-              </>
-            ) : (
-              <div role="alertdialog" aria-label="Confirm account deletion">
-                <p className="mb-3 text-sm text-(--text-primary)">
-                  This will permanently delete your account and all your data. This cannot be undone.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(false)}
-                    disabled={deleting}
-                    className="flex-1 rounded-md border border-(--border) px-3 py-2 text-sm text-(--text-primary) hover:bg-(--background) disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="flex-1 rounded-md bg-(--accent-secondary) px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-                  >
-                    {deleting ? 'Deleting…' : 'Delete'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setConfirmOpen(false)}
+                className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background) disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => void handleDelete()}
+                className="rounded-md bg-(--accent-secondary) px-4 py-2 text-sm font-medium text-(--text-on-accent) disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
     </header>
   );
 }

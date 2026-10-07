@@ -9,6 +9,8 @@ export type WidgetProps = {
 
 export type WidgetDefinition = {
   label: string;
+  service: string;
+  requiresAccount: boolean;
   component: ComponentType<WidgetProps>;
   allowedSizes: WidgetSize[];
   defaultRefreshSeconds: number;
@@ -18,6 +20,8 @@ export type WidgetDefinition = {
 export const WIDGETS: Record<string, WidgetDefinition> = {
   'sncf.departures': {
     label: 'Train departures',
+    service: 'sncf',
+    requiresAccount: false,
     component: SncfWidget,
     allowedSizes: ['big'],
     defaultRefreshSeconds: 60,
