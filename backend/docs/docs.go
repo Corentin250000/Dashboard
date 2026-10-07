@@ -354,7 +354,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a widget instance. The type must use the \"service.widget\" format (e.g. \"sncf.departures\"), the size must be allowed for that widget, the refresh rate must be at least 60 seconds, and the position is the zero-based top-left cell on the 6x6 desktop grid. The new widget must fit inside the grid without overlapping an existing widget.",
+                "description": "Create a widget instance. The type must use the \"service.widget\" format (e.g. \"sncf.departures\"), the size must be allowed for that widget, the refresh rate must be between 60 and 21600 seconds, and the position is the zero-based top-left cell on the 6x6 desktop grid. The new widget must fit inside the grid without overlapping an existing widget.",
                 "consumes": [
                     "application/json"
                 ],
@@ -408,7 +408,7 @@ const docTemplate = `{
                         }
                     },
                     "422": {
-                        "description": "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid.",
+                        "description": "Size not allowed for this widget, refresh rate outside the 60-21600 second range, invalid config parameter, or position outside the 6x6 grid.",
                         "schema": {
                             "$ref": "#/definitions/widgets.WidgetUnprocessableResponse"
                         }
@@ -542,7 +542,7 @@ const docTemplate = `{
                         }
                     },
                     "422": {
-                        "description": "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid.",
+                        "description": "Size not allowed for this widget, refresh rate outside the 60-21600 second range, invalid config parameter, or position outside the 6x6 grid.",
                         "schema": {
                             "$ref": "#/definitions/widgets.WidgetUnprocessableResponse"
                         }
