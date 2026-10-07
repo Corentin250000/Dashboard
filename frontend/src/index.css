@@ -11,6 +11,17 @@
   --accent-secondary: #C2410C;
 }
 
+/* :root {
+  --background: #f8f2e6;
+  --card: #d6e2b3;
+  --border: #e2e2df;
+  --text-primary: #4b5e34;
+  --text-secondary: #ffffff;
+  --text-on-accent: #ffffff;
+  --accent: #7aa05a;
+  --accent-secondary: #C2410C;
+} */
+
 html, body, #root {
   height: 100%;
   margin: 0;

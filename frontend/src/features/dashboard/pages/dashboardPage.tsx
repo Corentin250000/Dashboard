@@ -1,19 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
-import DashboardGrid, { type Layouts } from '../components/DashboardGrid';
 import WidgetCard from '../components/WidgetCard';
+import AddWidgetModal from '../components/AddWidgetModal';
 import { api, ApiError, type WidgetInstance } from '../../shared/api';
 import { buildLayouts } from '../tools/buildLayouts';
 import { WIDGETS } from '../widgets/registry';
+import DashboardGrid from '../components/DashboardGrid';
 
 function DashboardPage() {
   const navigate = useNavigate();
   const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
-  const [layouts, setLayouts] = useState<Layouts>({ lg: [], md: [], sm: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const layouts = useMemo(() => buildLayouts(widgets), [widgets]);
+  const [gridKey, setGridKey] = useState(0);
 
   const loadWidgets = useCallback(async () => {
     setLoading(true);
@@ -33,7 +36,6 @@ function DashboardPage() {
   }, [navigate]);
 
   useEffect(() => { void loadWidgets(); }, [loadWidgets]);
-  useEffect(() => { setLayouts(buildLayouts(widgets)); }, [widgets]);
 
   const removeWidget = async (id: string) => {
     setError('');
@@ -59,7 +61,7 @@ function DashboardPage() {
         item.id === id ? { ...item, position: { x, y } } : item,
       ));
     } catch (cause) {
-      setLayouts(buildLayouts(widgets));
+      setGridKey((k) => k + 1);
       if (cause instanceof ApiError && cause.status === 401) {
         navigate('/login');
       } else if (cause instanceof ApiError && (cause.status === 409 || cause.status === 422)) {
@@ -72,7 +74,7 @@ function DashboardPage() {
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
-      <TopBar />
+      <TopBar onAddWidget={() => setAddOpen(true)} />
       <main className="min-h-0 flex-1">
         {loading ? (
           <p role="status">Loading…</p>
@@ -80,12 +82,12 @@ function DashboardPage() {
           <p role="alert">{error} <button type="button" onClick={() => void loadWidgets()}>Retry</button></p>
         ) : widgets.length === 0 ? (
           <div className="flex h-full items-center justify-center text-(--text-secondary)">
-            <p>Start to create your dashboard !</p>
+            <p>Start to create your dashboard with the + button!</p>
           </div>
         ) : (
           <>
             {error && <p role="alert">{error}</p>}
-            <DashboardGrid layouts={layouts} onLayoutChange={setLayouts} onDragStop={moveWidget}>
+            <DashboardGrid key={gridKey} layouts={layouts} onDragStop={moveWidget}>
               {widgets.map((widget) => {
               const def = WIDGETS[widget.type];
               const Widget = def?.component;
@@ -110,6 +112,14 @@ function DashboardPage() {
           </>
         )}
       </main>
+      <AddWidgetModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        widgets={widgets}
+        onCreated={(widget) => setWidgets((current) => [...current, widget])}
+        // TODO: Populate from GET /api/me/services once that endpoint is active.
+        connectedServices={[]}
+      />
     </div>
   );
 }

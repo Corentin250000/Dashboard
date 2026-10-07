@@ -17,12 +17,11 @@ const MOBILE_ROW_HEIGHT = 140;
 
 type Props = {
   layouts: Layouts;
-  onLayoutChange: (all: Layouts) => void;
   onDragStop?: (id: string, x: number, y: number) => void;
   children: ReactNode;
 };
 
-export default function DashboardGrid({ layouts, onLayoutChange, onDragStop, children }: Props) {
+export default function DashboardGrid({ layouts, onDragStop, children }: Props) {
   const [breakpoint, setBreakpoint] = useState('lg');
   const { ref, height } = useElementHeight<HTMLDivElement>();
 
@@ -35,7 +34,6 @@ export default function DashboardGrid({ layouts, onLayoutChange, onDragStop, chi
     <div ref={ref} className="h-full overflow-x-hidden overflow-y-auto">
       <ResponsiveGrid
         layouts={layouts}
-        onLayoutChange={(_current, all) => onLayoutChange(all)}
         onBreakpointChange={(bp) => setBreakpoint(bp)}
         onDragStop={(_layout, _oldItem, newItem: LayoutItem | null) => {
           if (breakpoint === 'lg' && newItem) onDragStop?.(newItem.i, newItem.x, newItem.y);

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Plus, UserRound } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../shared/api';
 
-function TopBar() {
+type Props = { onAddWidget: () => void };
+
+function TopBar({ onAddWidget }: Props) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,10 +51,6 @@ function TopBar() {
     }
   };
 
-  const handleSubscription = async () => {
-    navigate('/subscription');
-  };
-
   return (
     <header
       className="flex h-16 w-full items-center justify-end border-b border-(--border) bg-(--card) px-6"
@@ -62,7 +60,7 @@ function TopBar() {
         <button
           type="button"
           aria-label="Add widget"
-          onClick={handleSubscription}
+          onClick={onAddWidget}
           className="mr-2 flex size-10 items-center justify-center rounded-full text-(--text-secondary) transition-colors hover:bg-(--background) hover:text-(--text-primary)"
         >
           <Plus size={20} aria-hidden="true" />
@@ -91,6 +89,13 @@ function TopBar() {
 
             {!confirmDelete ? (
               <>
+                <Link
+                  to="/subscription"
+                  className="block w-full rounded-md px-3 py-2 text-left text-sm text-(--text-primary) hover:bg-(--background)"
+                  onClick={closeMenu}
+                >
+                  Manage services
+                </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -124,7 +129,7 @@ function TopBar() {
                     type="button"
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="flex-1 rounded-md bg-(--accent-secondary) px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                    className="flex-1 rounded-md bg-(--accent-secondary) px-3 py-2 text-sm font-medium text-(--text-on-accent) disabled:opacity-50"
                   >
                     {deleting ? 'Deleting…' : 'Delete'}
                   </button>
