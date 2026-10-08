@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import WidgetCard from '../components/WidgetCard';
 import AddWidgetModal from '../components/AddWidgetModal';
-import { api, ApiError, type WidgetInstance } from '../../shared/api';
+import { api, ApiError, type ServiceInfo, type WidgetInstance } from '../../shared/api';
 import { buildLayouts } from '../tools/buildLayouts';
 import { WIDGETS } from '../widgets/registry';
 import DashboardGrid from '../components/DashboardGrid';
@@ -12,12 +12,19 @@ import Notifications from '../components/Notification'
 function DashboardPage() {
   const navigate = useNavigate();
   const [widgets, setWidgets] = useState<WidgetInstance[]>([]);
+  const [services, setServices] = useState<ServiceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<WidgetInstance | null>(null);
   const layouts = useMemo(() => buildLayouts(widgets), [widgets]);
+  const connectedServices = useMemo(
+    () => services
+      .filter((service) => service.connected || !service.requires_connection)
+      .map((service) => service.name),
+    [services],
+  );
   const [gridKey, setGridKey] = useState(0);
   const [notice, setNotice] = useState('');
   const dismissNotice = useCallback(() => setNotice(''), []);
@@ -41,6 +48,21 @@ function DashboardPage() {
 
   useEffect(() => { void loadWidgets(); }, [loadWidgets]);
 
+  const loadServices = useCallback(async () => {
+    try {
+      const response = await api.getServices();
+      setServices(response.services);
+    } catch {
+      setServices([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadServices();
+    window.addEventListener('focus', loadServices);
+    return () => window.removeEventListener('focus', loadServices);
+  }, [loadServices]);
+
   const removeWidget = async (id: string) => {
   try {
     await api.deleteWidget(id);
@@ -57,11 +79,11 @@ function DashboardPage() {
   }
 };
 
-  const forgetWidget = (id: string) => {
-    setWidgets((current) => current.filter((widget) => widget.id !== id));
-    setSelectedId((current) => (current === id ? null : current));
-    setEditing((current) => (current?.id === id ? null : current));
-  };
+const forgetWidget = (id: string) => {
+  setWidgets((current) => current.filter((widget) => widget.id !== id));
+  setSelectedId((current) => (current === id ? null : current));
+  setEditing((current) => (current?.id === id ? null : current));
+};
 
 const moveWidget = async (id: string, x: number, y: number) => {
   const widget = widgets.find((item) => item.id === id);
@@ -138,8 +160,7 @@ const moveWidget = async (id: string, x: number, y: number) => {
           forgetWidget(id);
           setNotice('This widget no longer exists.')
         }}
-        // TODO: Populate from GET /api/me/services once that endpoint is active.
-        connectedServices={[]}
+        connectedServices={connectedServices}
       />
       <Notifications message={notice} onClose={dismissNotice} />
     </div>

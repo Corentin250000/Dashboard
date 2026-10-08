@@ -31,7 +31,14 @@ export type WidgetInput = Omit<WidgetInstance, 'id'>;
 
 export type User = { id: string; email: string };
 
-export type ConnectedService = { name: string; connected: boolean };
+export type ServiceInfo = {
+  name: string;
+  display_name: string;
+  description: string;
+  connected: boolean;
+  requires_connection: boolean;
+  widgets: { type: string; available_sizes: WidgetSize[] }[];
+};
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -54,6 +61,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+// AUTH :
     login: (email: string, password: string) =>
         request<{ message: string }>('/auth/login',
           {
@@ -66,18 +74,17 @@ export const api = {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           }),
-    me: () => request<User>('/auth/me', { method: 'GET' }),
-    getServices: () => request<{ services: ConnectedService[] }>('/api/me/services', { method: 'GET' }),
     logout: () => request<void>('/auth/logout', { method: 'POST' }),
     confirmEmail: (token: string) =>
       request<{ status: 'confirmed' }>(`/confirm?token=${encodeURIComponent(token)}`),
     resendConfirmation: () => request<{ status: 'ok' }>('/confirm/resend', { method: 'POST' }),
+    me: () => request<User>('/auth/me', { method: 'GET' }),
     deleteAccount: () => request<{ message: string }>('/api/me/account', { method: 'DELETE' }),
-    getSncfDepartures: (station: string) =>
-      request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
-        { method: 'POST',
-          body: JSON.stringify({ text: station }),
-        }),
+// Services :
+    getServices: () => request<{ services: ServiceInfo[] }>('/api/me/services', { method: 'GET' }),
+    disconnectService: (name: string) =>
+      request<void>(`/api/me/services/${encodeURIComponent(name)}/connection`, { method: 'DELETE' }),
+// Widgets :
     getWidgets: () => request<{ widgets: WidgetInstance[] }>('/api/me/widgets'),
     createWidget: (w: WidgetInput) =>
       request<WidgetInstance>('/api/me/widgets', { method: 'POST', body: JSON.stringify(w) }),
@@ -85,4 +92,10 @@ export const api = {
       request<WidgetInstance>(`/api/me/widgets/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
     deleteWidget: (id: string) =>
       request<void>(`/api/me/widgets/${id}`, { method: 'DELETE' }),
+// Widgets services :
+    getSncfDepartures: (station: string) =>
+      request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
+        { method: 'POST',
+          body: JSON.stringify({ text: station }),
+        }),
 };
