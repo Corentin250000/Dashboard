@@ -11,11 +11,18 @@ import (
 	"dashboard-backend/internal/models"
 
 	"github.com/gofiber/fiber/v3"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 var steamClient *SteamClient
+
+// These groups prevent several widgets for the same user from refreshing the
+// same Steam data simultaneously. They do not serialize normal searches: only
+// calls sharing the same owner key are coalesced while the refresh is running.
+var steamFriendsSyncGroup singleflight.Group
+var steamFriendsRefreshGroup singleflight.Group
 
 const refreshInterval = 2 * time.Minute
 
@@ -35,6 +42,13 @@ func NormalizeName(value string) string {
 func normalizeName(value string) string { return NormalizeName(value) }
 
 func SyncFriends(ctx context.Context, ownerSteamID string) error {
+	_, err, _ := steamFriendsSyncGroup.Do(ownerSteamID, func() (interface{}, error) {
+		return nil, syncFriends(ctx, ownerSteamID)
+	})
+	return err
+}
+
+func syncFriends(ctx context.Context, ownerSteamID string) error {
 	if db == nil || steamClient == nil {
 		return errors.New("Steam friends service is not configured")
 	}
@@ -191,7 +205,7 @@ func Status(c fiber.Ctx) error {
 		for _, friend := range friends {
 			ids = append(ids, friend.FriendSteamID)
 		}
-		if err := refreshFound(c.Context(), ownerID, ids); err != nil {
+		if err := refreshFoundOnce(c.Context(), ownerID, ids); err != nil {
 			return steamSyncError(c, err)
 		}
 		if err := db.WithContext(c.Context()).Where("owner_steam_id = ? AND search_name ILIKE ? ESCAPE '\\'", ownerID, pattern).Order("persona_name ASC").Limit(10).Find(&friends).Error; err != nil {
@@ -211,6 +225,16 @@ func Status(c fiber.Ctx) error {
 		response.Results = append(response.Results, toStatus(friend))
 	}
 	return c.JSON(response)
+}
+
+// refreshFoundOnce coalesces concurrent refreshes for the same Steam account.
+// The first request supplies the IDs; subsequent requests wait for that same
+// refresh instead of issuing another GetPlayerSummaries call.
+func refreshFoundOnce(ctx context.Context, owner string, ids []string) error {
+	_, err, _ := steamFriendsRefreshGroup.Do(owner, func() (interface{}, error) {
+		return nil, refreshFound(ctx, owner, ids)
+	})
+	return err
 }
 
 func refreshFound(ctx context.Context, owner string, ids []string) error {

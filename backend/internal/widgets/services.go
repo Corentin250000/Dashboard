@@ -311,6 +311,9 @@ func OAuthCallback(c fiber.Ctx) error {
 	if err := db.Save(&connection).Error; err != nil {
 		return serviceError(c, fiber.StatusInternalServerError, "Unable to persist the service connection.")
 	}
+	if serviceName == "spotify" {
+		invalidateSpotifySession(user.ID)
+	}
 	if serviceName == "steam" && providerUser.UserID != "" {
 		go func(ownerSteamID string) {
 			if err := SyncFriends(context.Background(), ownerSteamID); err != nil {
@@ -360,6 +363,9 @@ func Disconnect(c fiber.Ctx) error {
 		return tx.Where("user_id = ? AND service_id = ?", user.ID, service.ID).Delete(&models.UserService{}).Error
 	}); err != nil {
 		return serviceError(c, fiber.StatusInternalServerError, "Unable to disconnect the service.")
+	}
+	if strings.ToLower(strings.TrimSpace(c.Params("service"))) == "spotify" {
+		invalidateSpotifySession(user.ID)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
