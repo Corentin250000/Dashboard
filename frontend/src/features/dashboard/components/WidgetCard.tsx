@@ -36,7 +36,7 @@ export default function WidgetCard({
         selected ? 'ring-2 ring-(--accent)' : ''
       }`}
     >
-      <header className="drag-handle flex cursor-grab items-center justify-between border-b border-(--border) px-3 py-2">
+      <header className="drag-handle flex cursor-grab items-center justify-between border-b border-(--border) bg-(--accent-soft) px-3 py-2">
         <h2 className="min-w-0 truncate font-medium text-(--text-primary)">{title}</h2>
         <div className="no-drag flex shrink-0 items-center gap-1">
           {onConfigure && (
@@ -47,7 +47,7 @@ export default function WidgetCard({
                 event.stopPropagation();
                 onConfigure();
               }}
-              className="rounded-md p-1.5 text-(--text-secondary) hover:bg-(--background) focus-visible:ring-2 focus-visible:ring-(--accent)"
+              className="rounded-md p-1.5 text-(--text-secondary) hover:bg-(--accent) hover:text-(--text-on-accent) focus-visible:ring-2 focus-visible:ring-(--accent)"
             >
               <Settings aria-hidden="true" size={18} />
             </button>
@@ -60,7 +60,7 @@ export default function WidgetCard({
                 event.stopPropagation();
                 onRemove();
               }}
-              className="rounded-md p-1.5 text-(--text-secondary) hover:bg-(--background) focus-visible:ring-2 focus-visible:ring-(--accent)"
+              className="rounded-md p-1.5 text-(--text-secondary) hover:bg-(--accent) hover:text-(--text-on-accent) focus-visible:ring-2 focus-visible:ring-(--accent)"
             >
               <Trash2 aria-hidden="true" size={18} />
             </button>
