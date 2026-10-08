@@ -20,6 +20,7 @@ export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, resta
     load();
     const id = setInterval(load, intervalMs);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restartKey, intervalMs]);
 
   return { data, error };

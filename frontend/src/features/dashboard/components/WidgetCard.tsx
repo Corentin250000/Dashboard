@@ -29,7 +29,7 @@ export default function WidgetCard({
   return (
     <article
       tabIndex={0}
-      aria-pressed={selected}
+      aria-current={selected ? 'true' : undefined}
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       className={`flex h-full flex-col overflow-hidden rounded-xl border border-(--border) bg-(--card) ${
