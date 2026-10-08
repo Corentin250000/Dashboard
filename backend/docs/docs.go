@@ -55,6 +55,88 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/calendar/events": {
+            "get": {
+                "description": "Return normalized events from the authenticated user's primary Google Calendar.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Google Calendar widgets"
+                ],
+                "summary": "Google Calendar upcoming events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "now",
+                        "example": "2026-10-08T00:00:00+02:00",
+                        "description": "RFC 3339 period start (defaults to now)",
+                        "name": "timeMin",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "now + 24h",
+                        "example": "2026-10-09T00:00:00+02:00",
+                        "description": "RFC 3339 period end (defaults to now + 24 hours)",
+                        "name": "timeMax",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 10,
+                        "example": 10,
+                        "description": "Number of events (1-50)",
+                        "name": "maxResults",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "team meeting",
+                        "description": "Optional text filter; not a request body field",
+                        "name": "keyword",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/widgets.CalendarEventDTO"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid calendar query parameter.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.CalendarErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Google must be connected or reconnected.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.CalendarErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Calendar API or scope may be missing.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.CalendarErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Google Calendar is temporarily unavailable.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.CalendarErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/me/account": {
             "delete": {
                 "description": "Permanently delete the authenticated user's account, sessions, service connections, and dashboard widgets. The session cookie is cleared after successful deletion.",
@@ -146,6 +228,7 @@ const docTemplate = `{
                         "enum": [
                             "spotify",
                             "google",
+                            "calendar",
                             "steam"
                         ],
                         "type": "string",
@@ -219,6 +302,7 @@ const docTemplate = `{
                         "enum": [
                             "spotify",
                             "google",
+                            "calendar",
                             "steam"
                         ],
                         "type": "string",
@@ -1861,6 +1945,48 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "dashboard API - see GET /about.json"
+                }
+            }
+        },
+        "widgets.CalendarErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Google Calendar is temporarily unavailable."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.CalendarEventDTO": {
+            "type": "object",
+            "properties": {
+                "allDay": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "end": {
+                    "type": "string",
+                    "example": "2026-10-08T10:00:00+02:00"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "event_123"
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Paris office"
+                },
+                "start": {
+                    "type": "string",
+                    "example": "2026-10-08T09:00:00+02:00"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Team meeting"
                 }
             }
         },

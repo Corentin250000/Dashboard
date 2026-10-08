@@ -132,6 +132,7 @@ func main() {
 	api.Delete("/me/services/:service/connection", widgets.Disconnect)
 	api.Get("/spotify/top", widgets.GetSpotifyTopItems)
 	api.Get("/spotify/currently-playing", widgets.GetSpotifyCurrentlyPlaying)
+	api.Get("/calendar/events", widgets.GetCalendarEvents)
 
 	// Account.
 	api.Delete("/me/account", auth.DeleteAccount)

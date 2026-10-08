@@ -115,6 +115,12 @@ func SeedCatalog(database *gorm.DB) error {
 			AuthType:    "oauth2",
 		},
 		{
+			Name:        "calendar",
+			DisplayName: "Google Calendar",
+			Description: "Google Calendar events",
+			AuthType:    "oauth2",
+		},
+		{
 			Name:        "spotify",
 			DisplayName: "Spotify",
 			Description: "Spotify account and playback data",
@@ -268,6 +274,39 @@ func SeedCatalog(database *gorm.DB) error {
 			if err := database.Where("widget_id = ? AND size_code = ?", widget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
 				return err
 			}
+		}
+	}
+
+	calendarService := models.Service{}
+	if err := database.Where("name = ?", "calendar").First(&calendarService).Error; err != nil {
+		return err
+	}
+	calendarWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", calendarService.ID, "upcoming_events").FirstOrCreate(&calendarWidget, models.Widget{
+		ServiceID:   calendarService.ID,
+		Name:        "upcoming_events",
+		DisplayName: "Upcoming events",
+		Description: "Display upcoming events from the user's primary Google Calendar",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct{ name, paramType string }{
+		{name: "timeMin", paramType: "string"},
+		{name: "timeMax", paramType: "string"},
+		{name: "maxResults", paramType: "integer"},
+		{name: "keyword", paramType: "string"},
+	} {
+		param := models.WidgetParam{}
+		if err := database.Where("widget_id = ? AND name = ?", calendarWidget.ID, paramData.name).FirstOrCreate(&param, models.WidgetParam{
+			WidgetID: calendarWidget.ID, Name: paramData.name, Type: paramData.paramType,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: calendarWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", calendarWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
 		}
 	}
 	return nil
