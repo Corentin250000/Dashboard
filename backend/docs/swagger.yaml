@@ -368,6 +368,36 @@ definitions:
         example: dashboard API - see GET /about.json
         type: string
     type: object
+  widgets.CalendarErrorResponse:
+    properties:
+      message:
+        example: Google Calendar is temporarily unavailable.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.CalendarEventDTO:
+    properties:
+      allDay:
+        example: false
+        type: boolean
+      end:
+        example: "2026-10-08T10:00:00+02:00"
+        type: string
+      id:
+        example: event_123
+        type: string
+      location:
+        example: Paris office
+        type: string
+      start:
+        example: "2026-10-08T09:00:00+02:00"
+        type: string
+      title:
+        example: Team meeting
+        type: string
+    type: object
   widgets.CreateWidgetRequest:
     properties:
       config:
@@ -936,6 +966,64 @@ paths:
       summary: Service catalog
       tags:
       - system
+  /api/calendar/events:
+    get:
+      description: Return normalized events from the authenticated user's primary
+        Google Calendar.
+      parameters:
+      - default: now
+        description: RFC 3339 period start (defaults to now)
+        example: "2026-10-08T00:00:00+02:00"
+        in: query
+        name: timeMin
+        type: string
+      - default: now + 24h
+        description: RFC 3339 period end (defaults to now + 24 hours)
+        example: "2026-10-09T00:00:00+02:00"
+        in: query
+        name: timeMax
+        type: string
+      - default: 10
+        description: Number of events (1-50)
+        example: 10
+        in: query
+        maximum: 50
+        minimum: 1
+        name: maxResults
+        type: integer
+      - description: Optional text filter; not a request body field
+        example: team meeting
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/widgets.CalendarEventDTO'
+            type: array
+        "400":
+          description: Invalid calendar query parameter.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+        "401":
+          description: Google must be connected or reconnected.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+        "403":
+          description: Calendar API or scope may be missing.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+        "502":
+          description: Google Calendar is temporarily unavailable.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+      summary: Google Calendar upcoming events
+      tags:
+      - Google Calendar widgets
   /api/me/account:
     delete:
       description: Permanently delete the authenticated user's account, sessions,
@@ -1002,6 +1090,7 @@ paths:
         enum:
         - spotify
         - google
+        - calendar
         - steam
         in: path
         name: service
@@ -1058,6 +1147,7 @@ paths:
         enum:
         - spotify
         - google
+        - calendar
         - steam
         in: path
         name: service

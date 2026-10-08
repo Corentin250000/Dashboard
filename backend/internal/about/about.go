@@ -72,6 +72,21 @@ func Registry() []Service {
 			},
 		},
 		{
+			Name: "calendar",
+			Widgets: []Widget{
+				{
+					Name:        "upcoming_events",
+					Description: "Display upcoming events from the user's primary Google Calendar",
+					Params: []Param{
+						{Name: "timeMin", Type: "string"},
+						{Name: "timeMax", Type: "string"},
+						{Name: "maxResults", Type: "integer"},
+						{Name: "keyword", Type: "string"},
+					},
+				},
+			},
+		},
+		{
 			Name: "steam",
 			Widgets: []Widget{
 				{

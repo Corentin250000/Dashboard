@@ -44,7 +44,9 @@ func ConfigureOAuth() {
 		"profile",
 		"email",
 		"https://www.googleapis.com/auth/calendar.readonly",
+		"https://www.googleapis.com/auth/calendar.events.readonly",
 	)
+	serviceGoogleProvider.SetAccessType("offline")
 	serviceGoogleProvider.SetName("service_google")
 	githubProvider := github.New(
 		utils.GetEnv("CLIENT_ID_GITHUB", ""),
