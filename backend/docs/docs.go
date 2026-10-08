@@ -354,7 +354,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a widget instance. The type must use the \"service.widget\" format (e.g. \"sncf.departures\"), the size must be allowed for that widget, the refresh rate must be at least 60 seconds, and the position is the zero-based top-left cell on the 6x6 desktop grid. The new widget must fit inside the grid without overlapping an existing widget.",
+                "description": "Create a widget instance. The type must use the \"service.widget\" format (e.g. \"sncf.departures\"), the size must be allowed for that widget, the refresh rate must be between 60 and 21600 seconds, and the position is the zero-based top-left cell on the 6x6 desktop grid. The new widget must fit inside the grid without overlapping an existing widget.",
                 "consumes": [
                     "application/json"
                 ],
@@ -408,7 +408,7 @@ const docTemplate = `{
                         }
                     },
                     "422": {
-                        "description": "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid.",
+                        "description": "Size not allowed for this widget, refresh rate outside the 60-21600 second range, invalid config parameter, or position outside the 6x6 grid.",
                         "schema": {
                             "$ref": "#/definitions/widgets.WidgetUnprocessableResponse"
                         }
@@ -542,7 +542,7 @@ const docTemplate = `{
                         }
                     },
                     "422": {
-                        "description": "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid.",
+                        "description": "Size not allowed for this widget, refresh rate outside the 60-21600 second range, invalid config parameter, or position outside the 6x6 grid.",
                         "schema": {
                             "$ref": "#/definitions/widgets.WidgetUnprocessableResponse"
                         }
@@ -641,7 +641,7 @@ const docTemplate = `{
                 "summary": "SNCF journeys",
                 "parameters": [
                     {
-                        "description": "Journey search request. Example: {\\",
+                        "description": "Journey search request.",
                         "name": "journey",
                         "in": "body",
                         "required": true,
@@ -652,7 +652,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Up to five journeys. Example: {\\\"journeys\\\":[{\\\"departure_time\\\":\\\"08:12 (03/10/2026)\\\",\\\"arrival_time\\\":\\\"09:05 (03/10/2026)\\\",\\\"transfers\\\":0}]}",
+                        "description": "Up to five journeys.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SncfJourneysResponse"
                         }
@@ -853,7 +853,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Malformed JSON, empty pseudo, pseudo longer than 64 Unicode characters, or no Steam account connected.",
+                        "description": "Malformed JSON, empty pseudo, or pseudo longer than 64 Unicode characters.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamFriendsBadRequestResponse"
                         }
@@ -865,7 +865,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "The Steam friend list is private.",
+                        "description": "The Steam account is not connected or the Steam friend list is private.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamFriendsPrivateResponse"
                         }

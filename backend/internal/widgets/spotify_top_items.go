@@ -45,9 +45,6 @@ func GetSpotifyTopItems(c fiber.Ctx) error {
 	if !ok {
 		return spotifyError(c, fiber.StatusUnauthorized, "spotify_reauth_required", "Spotify must be connected again.")
 	}
-	lock := spotifyLock(user.ID)
-	lock.Lock()
-	defer lock.Unlock()
 	client, transport, err := spotifyClient(user.ID)
 	if err != nil {
 		return spotifyServiceError(c, err)

@@ -12,8 +12,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// minRefreshRateSeconds is the minimum polling interval for a widget instance.
-const minRefreshRateSeconds = 60
+// Widget refresh intervals are bounded to avoid overly frequent polling and
+// intervals that are too long to be useful in the dashboard.
+const (
+	minRefreshRateSeconds = 60
+	maxRefreshRateSeconds = 21600
+)
 
 // WidgetPosition is the zero-based top-left cell of an instance on the 6x6 desktop grid.
 type WidgetPosition struct {
@@ -166,6 +170,34 @@ func SeedCatalog(database *gorm.DB) error {
 			return err
 		}
 	}
+
+	journeysWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", service.ID, "journeys").FirstOrCreate(&journeysWidget, models.Widget{
+		ServiceID:   service.ID,
+		Name:        "journeys",
+		DisplayName: "Journeys",
+		Description: "Search train journeys between two stations for a given date and time",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct{ name, paramType string }{
+		{name: "from", paramType: "string"},
+		{name: "to", paramType: "string"},
+		{name: "datetime", paramType: "string"},
+	} {
+		param := models.WidgetParam{}
+		if err := database.Where("widget_id = ? AND name = ?", journeysWidget.ID, paramData.name).FirstOrCreate(&param, models.WidgetParam{
+			WidgetID: journeysWidget.ID, Name: paramData.name, Type: paramData.paramType, IsRequired: true,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: journeysWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", journeysWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
+		}
+	}
 	steamService := models.Service{}
 	if err := database.Where("name = ?", "steam").First(&steamService).Error; err != nil {
 		return err
@@ -276,7 +308,7 @@ func ListWidgets(c fiber.Ctx) error {
 
 // CreateWidget adds a widget instance to the dashboard of the authenticated user.
 // @Summary Create a dashboard widget
-// @Description Create a widget instance. The type must use the "service.widget" format (e.g. "sncf.departures"), the size must be allowed for that widget, the refresh rate must be at least 60 seconds, and the position is the zero-based top-left cell on the 6x6 desktop grid. The new widget must fit inside the grid without overlapping an existing widget.
+// @Description Create a widget instance. The type must use the "service.widget" format (e.g. "sncf.departures"), the size must be allowed for that widget, the refresh rate must be between 60 and 21600 seconds, and the position is the zero-based top-left cell on the 6x6 desktop grid. The new widget must fit inside the grid without overlapping an existing widget.
 // @Tags widgets
 // @Accept json
 // @Produce json
@@ -286,7 +318,7 @@ func ListWidgets(c fiber.Ctx) error {
 // @Failure 401 {object} WidgetUnauthorizedResponse "Missing, expired or invalid session cookie."
 // @Failure 404 {object} WidgetTypeNotFoundResponse "Unknown widget type (unknown service, unknown widget, or malformed type string)."
 // @Failure 409 {object} WidgetConflictResponse "The new widget overlaps another widget of the dashboard."
-// @Failure 422 {object} WidgetUnprocessableResponse "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid."
+// @Failure 422 {object} WidgetUnprocessableResponse "Size not allowed for this widget, refresh rate outside the 60-21600 second range, invalid config parameter, or position outside the 6x6 grid."
 // @Failure 500 {object} WidgetServerErrorResponse "Unable to create the widget."
 // @Failure 503 {object} WidgetUnavailableResponse "The database is not configured."
 // @Router /api/me/widgets [post]
@@ -381,7 +413,7 @@ func CreateWidget(c fiber.Ctx) error {
 // @Failure 401 {object} WidgetUnauthorizedResponse "Missing, expired or invalid session cookie."
 // @Failure 404 {object} WidgetInstanceNotFoundResponse "No widget with this ID on the dashboard of the current user."
 // @Failure 409 {object} WidgetConflictResponse "The updated widget would overlap another widget of the dashboard."
-// @Failure 422 {object} WidgetUnprocessableResponse "Size not allowed for this widget, refresh rate below 60 seconds, invalid config parameter, or position outside the 6x6 grid."
+// @Failure 422 {object} WidgetUnprocessableResponse "Size not allowed for this widget, refresh rate outside the 60-21600 second range, invalid config parameter, or position outside the 6x6 grid."
 // @Failure 500 {object} WidgetServerErrorResponse "Unable to update the widget."
 // @Failure 503 {object} WidgetUnavailableResponse "The database is not configured."
 // @Router /api/me/widgets/{id} [patch]
@@ -554,6 +586,9 @@ func validateSizeAllowed(widgetID uuid.UUID, sizeCode string) error {
 func validateRefreshRate(seconds int) error {
 	if seconds < minRefreshRateSeconds {
 		return errors.New("The refresh rate must be at least 60 seconds.")
+	}
+	if seconds > maxRefreshRateSeconds {
+		return errors.New("The refresh rate must be at most 21600 seconds.")
 	}
 	return nil
 }

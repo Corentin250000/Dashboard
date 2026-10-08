@@ -11,11 +11,18 @@ import (
 	"dashboard-backend/internal/models"
 
 	"github.com/gofiber/fiber/v3"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 var steamClient *SteamClient
+
+// These groups prevent several widgets for the same user from refreshing the
+// same Steam data simultaneously. They do not serialize normal searches: only
+// calls sharing the same owner key are coalesced while the refresh is running.
+var steamFriendsSyncGroup singleflight.Group
+var steamFriendsRefreshGroup singleflight.Group
 
 const refreshInterval = 2 * time.Minute
 
@@ -35,6 +42,13 @@ func NormalizeName(value string) string {
 func normalizeName(value string) string { return NormalizeName(value) }
 
 func SyncFriends(ctx context.Context, ownerSteamID string) error {
+	_, err, _ := steamFriendsSyncGroup.Do(ownerSteamID, func() (interface{}, error) {
+		return nil, syncFriends(ctx, ownerSteamID)
+	})
+	return err
+}
+
+func syncFriends(ctx context.Context, ownerSteamID string) error {
 	if db == nil || steamClient == nil {
 		return errors.New("Steam friends service is not configured")
 	}
@@ -136,9 +150,9 @@ type SteamFriendsUnavailableResponse struct {
 // @Produce json
 // @Param request body SteamFriendStatusRequest true "Pseudo to search (1 to 64 Unicode characters)" example({"pseudo":"chrystoval"})
 // @Success 200 {object} SteamFriendStatusResponse "Matching friends, limited to 10 results. Exact normalized matches are returned first. Example: {\"results\":[{\"steamId\":\"76561198978982665\",\"pseudo\":\"chrystoval\\u2067\\u2067♛\",\"profileVisibility\":\"public\",\"profileConfigured\":true,\"status\":\"En ligne\",\"currentGame\":{\"id\":\"730\",\"name\":\"Counter-Strike 2\"},\"lastLogoff\":\"2026-10-05T19:51:31Z\"}]}"
-// @Failure 400 {object} SteamFriendsBadRequestResponse "Malformed JSON, empty pseudo, pseudo longer than 64 Unicode characters, or no Steam account connected."
+// @Failure 400 {object} SteamFriendsBadRequestResponse "Malformed JSON, empty pseudo, or pseudo longer than 64 Unicode characters."
 // @Failure 401 {object} SteamFriendsUnauthorizedResponse "The session_id cookie is missing, expired or invalid."
-// @Failure 403 {object} SteamFriendsPrivateResponse "The Steam friend list is private."
+// @Failure 403 {object} SteamFriendsPrivateResponse "The Steam account is not connected or the Steam friend list is private."
 // @Failure 500 {object} SteamFriendsServerResponse "The local Steam friends data could not be searched or refreshed."
 // @Failure 502 {object} SteamFriendsBadGatewayResponse "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response."
 // @Failure 503 {object} SteamFriendsUnavailableResponse "The Steam friends service is not configured."
@@ -162,7 +176,7 @@ func Status(c fiber.Ctx) error {
 	ownerID, err := steamIDForUser(user.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return steamError(c, fiber.StatusBadRequest, "A Steam account is not connected.")
+			return steamError(c, fiber.StatusForbidden, "A Steam account is not connected.")
 		}
 		return steamError(c, fiber.StatusInternalServerError, "Unable to load the Steam connection.")
 	}
@@ -191,7 +205,7 @@ func Status(c fiber.Ctx) error {
 		for _, friend := range friends {
 			ids = append(ids, friend.FriendSteamID)
 		}
-		if err := refreshFound(c.Context(), ownerID, ids); err != nil {
+		if err := refreshFoundOnce(c.Context(), ownerID, ids); err != nil {
 			return steamSyncError(c, err)
 		}
 		if err := db.WithContext(c.Context()).Where("owner_steam_id = ? AND search_name ILIKE ? ESCAPE '\\'", ownerID, pattern).Order("persona_name ASC").Limit(10).Find(&friends).Error; err != nil {
@@ -211,6 +225,16 @@ func Status(c fiber.Ctx) error {
 		response.Results = append(response.Results, toStatus(friend))
 	}
 	return c.JSON(response)
+}
+
+// refreshFoundOnce coalesces concurrent refreshes for the same Steam account.
+// The first request supplies the IDs; subsequent requests wait for that same
+// refresh instead of issuing another GetPlayerSummaries call.
+func refreshFoundOnce(ctx context.Context, owner string, ids []string) error {
+	_, err, _ := steamFriendsRefreshGroup.Do(owner, func() (interface{}, error) {
+		return nil, refreshFound(ctx, owner, ids)
+	})
+	return err
 }
 
 func refreshFound(ctx context.Context, owner string, ids []string) error {

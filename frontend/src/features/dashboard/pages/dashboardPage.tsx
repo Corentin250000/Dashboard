@@ -62,7 +62,6 @@ function DashboardPage() {
     window.addEventListener('focus', loadServices);
     return () => window.removeEventListener('focus', loadServices);
   }, [loadServices]);
-
   const removeWidget = async (id: string) => {
   try {
     await api.deleteWidget(id);

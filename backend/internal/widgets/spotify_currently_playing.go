@@ -33,11 +33,16 @@ type spotifyErrorResponse struct {
 	Message string `json:"message" example:"Reconnect Spotify to use this widget."`
 }
 
-var spotifyUserLocks sync.Map // map[uuid.UUID]*sync.Mutex
+// Spotify clients are cached per user. The old implementation used one mutex
+// around every Spotify request, which made otherwise independent widgets run
+// sequentially. The cache mutex only protects client creation; requests made
+// with an already-created client are allowed to run concurrently.
+var spotifySessions sync.Map // map[uuid.UUID]*spotifySession
+var spotifySessionsMu sync.Mutex
 
-func spotifyLock(userID uuid.UUID) *sync.Mutex {
-	lock, _ := spotifyUserLocks.LoadOrStore(userID, &sync.Mutex{})
-	return lock.(*sync.Mutex)
+type spotifySession struct {
+	client    *spotify.Client
+	transport *retryAfterTransport
 }
 
 // GetSpotifyCurrentlyPlaying returns only the fields needed by the widget.
@@ -56,9 +61,6 @@ func GetSpotifyCurrentlyPlaying(c fiber.Ctx) error {
 	if !ok {
 		return spotifyError(c, fiber.StatusUnauthorized, "spotify_reauth_required", "Spotify must be connected again.")
 	}
-	lock := spotifyLock(user.ID)
-	lock.Lock()
-	defer lock.Unlock()
 	client, transport, err := spotifyClient(user.ID)
 	if err != nil {
 		return spotifyServiceError(c, err)
@@ -107,6 +109,20 @@ func (t *retryAfterTransport) header() string      { t.mu.Lock(); defer t.mu.Unl
 func (t *retryAfterTransport) responseStatus() int { t.mu.Lock(); defer t.mu.Unlock(); return t.status }
 
 func spotifyClient(userID uuid.UUID) (*spotify.Client, *retryAfterTransport, error) {
+	if cached, ok := spotifySessions.Load(userID); ok {
+		session := cached.(*spotifySession)
+		return session.client, session.transport, nil
+	}
+
+	// Only the first request for a user needs serialization. Do not hold this
+	// mutex while making an HTTP request to Spotify.
+	spotifySessionsMu.Lock()
+	defer spotifySessionsMu.Unlock()
+	if cached, ok := spotifySessions.Load(userID); ok {
+		session := cached.(*spotifySession)
+		return session.client, session.transport, nil
+	}
+
 	var connection models.UserService
 	var service models.Service
 	if err := db.Where("name = ?", "spotify").First(&service).Error; err != nil {
@@ -141,15 +157,63 @@ func spotifyClient(userID uuid.UUID) (*spotify.Client, *retryAfterTransport, err
 	if err != nil {
 		return nil, nil, errReauthRequired
 	}
-	oauthClient := config.Client(context.Background(), validToken)
-	transport := &retryAfterTransport{base: oauthClient.Transport}
 	if validToken.AccessToken != token.AccessToken || (validToken.RefreshToken != "" && validToken.RefreshToken != refresh) {
 		if err := persistSpotifyToken(connection, validToken); err != nil {
-			return nil, transport, err
+			return nil, nil, err
 		}
 	}
+	// Config.TokenSource uses oauth2's token reuse/refresh implementation. The
+	// wrapper persists a refreshed token without serializing normal API calls.
+	tokenSource := &persistingSpotifyTokenSource{
+		base:       config.TokenSource(context.Background(), validToken),
+		connection: connection,
+		access:     validToken.AccessToken,
+		refresh:    validToken.RefreshToken,
+	}
+	oauthClient := oauth2.NewClient(context.Background(), tokenSource)
+	transport := &retryAfterTransport{base: oauthClient.Transport}
 	oauthClient.Transport = transport
-	return spotify.New(oauthClient), transport, nil
+	session := &spotifySession{client: spotify.New(oauthClient), transport: transport}
+	spotifySessions.Store(userID, session)
+	return session.client, session.transport, nil
+}
+
+// persistingSpotifyToken keeps the database in sync when oauth2 refreshes a
+// token. The mutex is deliberately limited to this persistence operation.
+type persistingSpotifyTokenSource struct {
+	base       oauth2.TokenSource
+	connection models.UserService
+	mu         sync.Mutex
+	access     string
+	refresh    string
+}
+
+func (s *persistingSpotifyTokenSource) Token() (*oauth2.Token, error) {
+	token, err := s.base.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if token.AccessToken == s.access && (token.RefreshToken == "" || token.RefreshToken == s.refresh) {
+		return token, nil
+	}
+
+	if token.AccessToken != s.access || (token.RefreshToken != "" && token.RefreshToken != s.refresh) {
+		if err := persistSpotifyToken(s.connection, token); err != nil {
+			return nil, err
+		}
+		s.access = token.AccessToken
+		if token.RefreshToken != "" {
+			s.refresh = token.RefreshToken
+		}
+	}
+	return token, nil
+}
+
+func invalidateSpotifySession(userID uuid.UUID) {
+	spotifySessions.Delete(userID)
 }
 
 var errNotSubscribed = errors.New("spotify service not subscribed")

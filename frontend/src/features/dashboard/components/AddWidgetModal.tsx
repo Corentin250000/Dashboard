@@ -19,6 +19,49 @@ type Props = {
 
 const SIZES_ORDER: WidgetSize[] = ['small', 'wide', 'tall', 'big'];
 
+function splitDatetime(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})$/.exec(value);
+  return match
+    ? { datetime_date: `${match[3]}/${match[2]}/${match[1]}`, datetime_time: match[4] }
+    : { datetime_date: '', datetime_time: '' };
+}
+
+function formatDatetime(date: string, time: string) {
+  const dateMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date);
+  const timeMatch = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!dateMatch || !timeMatch) return null;
+
+  const day = Number(dateMatch[1]);
+  const month = Number(dateMatch[2]);
+  const year = Number(dateMatch[3]);
+  const hours = Number(timeMatch[1]);
+  const minutes = Number(timeMatch[2]);
+  const parsed = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day ||
+    parsed.getUTCHours() !== hours ||
+    parsed.getUTCMinutes() !== minutes
+  ) return null;
+
+  return `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${time}`;
+}
+
+function valuesForParams(
+  definition: WidgetDefinition,
+  config: Record<string, string> = {},
+) {
+  const values = Object.fromEntries(definition.params.map((param) => [
+    param.name,
+    String(config[param.name] ?? param.defaultValue ?? ''),
+  ]));
+  if (definition.params.some((param) => param.name === 'datetime')) {
+    Object.assign(values, splitDatetime(config.datetime ?? ''));
+  }
+  return values;
+}
+
 export default function AddWidgetModal({
   open,
   onClose,
@@ -49,17 +92,14 @@ export default function AddWidgetModal({
       if (editing) {
         const definition = WIDGETS[editing.type];
         if (!definition) {
-          setSelected(null);
-          setValues({});
+           setSelected(null);
+           setValues({});
           setRefreshSeconds('');
           setConfigurationUnavailable(true);
           setError('This widget can no longer be configured.');
         } else {
           setSelected([editing.type, definition]);
-          setValues(Object.fromEntries(definition.params.map((param) => [
-            param.name,
-            editing.config[param.name] ?? '',
-          ])));
+           setValues(valuesForParams(definition, editing.config));
           setRefreshSeconds(String(editing.refresh_rate_seconds));
           setSize(editing.size);
         }
@@ -74,7 +114,7 @@ export default function AddWidgetModal({
 
   const chooseWidget = (key: string, definition: WidgetDefinition) => {
     setSelected([key, definition]);
-    setValues(Object.fromEntries(definition.params.map((param) => [param.name, ''])));
+    setValues(valuesForParams(definition));
     setRefreshSeconds(String(definition.defaultRefreshSeconds));
     setSize(definition.allowedSizes[0]);
     setError('');
@@ -84,7 +124,7 @@ export default function AddWidgetModal({
     event.preventDefault();
     if (!selected) return;
     const [type, definition] = selected;
-    if (definition.params.some((param) => !values[param.name]?.trim())) {
+    if (definition.params.some((param) => param.name !== 'datetime' && !values[param.name]?.trim())) {
       setError('Please complete all required fields.');
       return;
     }
@@ -96,14 +136,23 @@ export default function AddWidgetModal({
 
     const config = Object.fromEntries(definition.params.map((param) => [
       param.name,
-      param.type === 'integer' ? String(Number(values[param.name])) : values[param.name].trim(),
+      param.type === 'integer' ? Number(values[param.name]) : values[param.name].trim(),
     ]));
+    if (definition.params.some((param) => param.name === 'datetime')) {
+      const datetime = formatDatetime(values.datetime_date?.trim() ?? '', values.datetime_time?.trim() ?? '');
+      if (!datetime) {
+        setError('Please enter a valid date (DD/MM/YYYY) and time (HH:mm).');
+        return;
+      }
+      config.datetime = datetime;
+    }
 
     setError('');
     setAdding(true);
     try {
       if (editing) {
         const updated = await api.updateWidget(editing.id, {
+          size,
           config,
           refresh_rate_seconds: refresh,
         });
@@ -212,7 +261,115 @@ export default function AddWidgetModal({
             </div>
           ) : (
             <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
-              {selected[1].params.map((param) => (
+              {selected[1].params.map((param) => param.name === 'show_progress' ? (
+                <div key={param.name}>
+                  <label htmlFor="widget-param-show-progress" className="mb-1 block text-sm font-medium">
+                    Show progress
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      id="widget-param-show-progress"
+                      type="button"
+                      role="switch"
+                      aria-checked={values.show_progress === '1'}
+                      aria-label="Show progress"
+                      onClick={() => setValues((current) => ({
+                        ...current,
+                        show_progress: current.show_progress === '1' ? '0' : '1',
+                      }))}
+                      className={`relative h-6 w-11 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2 ${
+                        values.show_progress === '1' ? 'bg-(--accent)' : 'bg-(--border)'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                          values.show_progress === '1' ? 'translate-x-5' : ''
+                        }`}
+                      />
+                    </button>
+                    <span className="text-sm text-(--text-secondary)">
+                      {values.show_progress === '1' ? 'On' : 'Off'}
+                    </span>
+                  </div>
+                </div>
+              ) : param.name === 'item_type' ? (
+                <div key={param.name}>
+                  <span className="mb-1 block text-sm font-medium">Show top</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-(--text-secondary)">Artists</span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={values.item_type === 'tracks'}
+                      aria-label="Choose top tracks or artists"
+                      onClick={() => setValues((current) => ({
+                        ...current,
+                        item_type: current.item_type === 'tracks' ? 'artists' : 'tracks',
+                      }))}
+                      className={`relative h-6 w-11 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2 ${
+                        values.item_type === 'tracks' ? 'bg-(--accent)' : 'bg-(--border)'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                          values.item_type === 'tracks' ? 'translate-x-5' : ''
+                        }`}
+                      />
+                    </button>
+                    <span className="text-sm text-(--text-secondary)">Tracks</span>
+                  </div>
+                </div>
+              ) : param.name === 'time_range' ? (
+                <div key={param.name}>
+                  <label htmlFor="widget-param-time-range" className="mb-1 block text-sm font-medium">
+                    Time range
+                  </label>
+                  <select
+                    id="widget-param-time-range"
+                    value={values.time_range ?? 'medium_term'}
+                    onChange={(event) => setValues((current) => ({ ...current, time_range: event.target.value }))}
+                    className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                  >
+                    <option value="short_term">Last 4 weeks</option>
+                    <option value="medium_term">Last 6 months</option>
+                    <option value="long_term">All time</option>
+                  </select>
+                </div>
+              ) : param.name === 'datetime' ? (
+                <div key={param.name}>
+                  <span className="mb-1 block text-sm font-medium">Departure date and time</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label htmlFor="widget-param-datetime-date" className="sr-only">Date (DD/MM/YYYY)</label>
+                      <input
+                        id="widget-param-datetime-date"
+                        required
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="DD/MM/YYYY"
+                        pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                        value={values.datetime_date ?? ''}
+                        onChange={(event) => setValues((current) => ({ ...current, datetime_date: event.target.value }))}
+                        className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="widget-param-datetime-time" className="sr-only">Time (HH:mm)</label>
+                      <input
+                        id="widget-param-datetime-time"
+                        required
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="HH:mm"
+                        pattern="[0-9]{2}:[0-9]{2}"
+                        value={values.datetime_time ?? ''}
+                        onChange={(event) => setValues((current) => ({ ...current, datetime_time: event.target.value }))}
+                        className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <div key={param.name}>
                   <label htmlFor={`widget-param-${param.name}`} className="mb-1 block text-sm font-medium">{param.label}</label>
                   <input

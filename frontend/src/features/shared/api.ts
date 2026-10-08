@@ -16,6 +16,29 @@ export type SncfDeparture = {
   cancelled: boolean;
 };
 
+export type SncfJourney = {
+  departure_time: string;
+  arrival_time: string;
+  transfers: number;
+};
+
+export type SpotifyCurrentlyPlaying = {
+  playing: boolean;
+  track_name?: string;
+  artists?: string[];
+  album_name?: string;
+  progress_ms?: number;
+  duration_ms?: number;
+  spotify_url?: string;
+};
+
+export type SpotifyTopItem = {
+  name: string;
+  artists?: string[];
+  spotify_url: string;
+  rank: number;
+};
+
 export type WidgetSize = 'small' | 'wide' | 'tall' | 'big';
 
 export type WidgetInstance = {
@@ -27,7 +50,9 @@ export type WidgetInstance = {
   position: { x: number; y: number };
 };
 
-export type WidgetInput = Omit<WidgetInstance, 'id'>;
+export type WidgetInput = Omit<WidgetInstance, 'id' | 'config'> & {
+  config: Record<string, string | number>;
+};
 
 export type User = { id: string; email: string };
 
@@ -80,6 +105,22 @@ export const api = {
     resendConfirmation: () => request<{ status: 'ok' }>('/confirm/resend', { method: 'POST' }),
     me: () => request<User>('/auth/me', { method: 'GET' }),
     deleteAccount: () => request<{ message: string }>('/api/me/account', { method: 'DELETE' }),
+    getSncfDepartures: (station: string) =>
+      request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
+        { method: 'POST',
+          body: JSON.stringify({ text: station }),
+        }),
+    getSncfJourneys: (from: string, to: string, datetime: string) =>
+      request<{ journeys: SncfJourney[] }>('/api/sncf/journeys', {
+        method: 'POST',
+        body: JSON.stringify({ from, to, datetime }),
+      }),
+    getSpotifyCurrentlyPlaying: () =>
+      request<SpotifyCurrentlyPlaying>('/api/spotify/currently-playing'),
+    getSpotifyTopItems: (itemType: string, timeRange: string) => {
+      const query = new URLSearchParams({ item_type: itemType, time_range: timeRange });
+      return request<{ items: SpotifyTopItem[] }>(`/api/spotify/top?${query.toString()}`);
+    },
 // Services :
     getServices: () => request<{ services: ServiceInfo[] }>('/api/me/services', { method: 'GET' }),
     disconnectService: (name: string) =>
@@ -92,10 +133,4 @@ export const api = {
       request<WidgetInstance>(`/api/me/widgets/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
     deleteWidget: (id: string) =>
       request<void>(`/api/me/widgets/${id}`, { method: 'DELETE' }),
-// Widgets services :
-    getSncfDepartures: (station: string) =>
-      request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
-        { method: 'POST',
-          body: JSON.stringify({ text: station }),
-        }),
 };
