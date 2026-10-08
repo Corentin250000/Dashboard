@@ -136,9 +136,9 @@ type SteamFriendsUnavailableResponse struct {
 // @Produce json
 // @Param request body SteamFriendStatusRequest true "Pseudo to search (1 to 64 Unicode characters)" example({"pseudo":"chrystoval"})
 // @Success 200 {object} SteamFriendStatusResponse "Matching friends, limited to 10 results. Exact normalized matches are returned first. Example: {\"results\":[{\"steamId\":\"76561198978982665\",\"pseudo\":\"chrystoval\\u2067\\u2067♛\",\"profileVisibility\":\"public\",\"profileConfigured\":true,\"status\":\"En ligne\",\"currentGame\":{\"id\":\"730\",\"name\":\"Counter-Strike 2\"},\"lastLogoff\":\"2026-10-05T19:51:31Z\"}]}"
-// @Failure 400 {object} SteamFriendsBadRequestResponse "Malformed JSON, empty pseudo, pseudo longer than 64 Unicode characters, or no Steam account connected."
+// @Failure 400 {object} SteamFriendsBadRequestResponse "Malformed JSON, empty pseudo, or pseudo longer than 64 Unicode characters."
 // @Failure 401 {object} SteamFriendsUnauthorizedResponse "The session_id cookie is missing, expired or invalid."
-// @Failure 403 {object} SteamFriendsPrivateResponse "The Steam friend list is private."
+// @Failure 403 {object} SteamFriendsPrivateResponse "The Steam account is not connected or the Steam friend list is private."
 // @Failure 500 {object} SteamFriendsServerResponse "The local Steam friends data could not be searched or refreshed."
 // @Failure 502 {object} SteamFriendsBadGatewayResponse "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response."
 // @Failure 503 {object} SteamFriendsUnavailableResponse "The Steam friends service is not configured."
@@ -162,7 +162,7 @@ func Status(c fiber.Ctx) error {
 	ownerID, err := steamIDForUser(user.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return steamError(c, fiber.StatusBadRequest, "A Steam account is not connected.")
+			return steamError(c, fiber.StatusForbidden, "A Steam account is not connected.")
 		}
 		return steamError(c, fiber.StatusInternalServerError, "Unable to load the Steam connection.")
 	}

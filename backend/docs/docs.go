@@ -853,7 +853,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Malformed JSON, empty pseudo, pseudo longer than 64 Unicode characters, or no Steam account connected.",
+                        "description": "Malformed JSON, empty pseudo, or pseudo longer than 64 Unicode characters.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamFriendsBadRequestResponse"
                         }
@@ -865,7 +865,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "The Steam friend list is private.",
+                        "description": "The Steam account is not connected or the Steam friend list is private.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamFriendsPrivateResponse"
                         }
