@@ -94,10 +94,10 @@ function SubscriptionPage() {
                   {service.widgets.length} {service.widgets.length === 1 ? 'widget' : 'widgets'}
                 </p>
                 {!service.requires_connection ? (
-                  <span className="rounded-full border border-(--border) px-3 py-1 text-sm text-(--text-secondary)">Included</span>
+                  <span className="rounded-full border border-(--border) bg-(--accent-soft) px-3 py-1 text-sm text-(--text-secondary)">Included</span>
                 ) : service.connected ? (
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-(--border) px-3 py-1 text-sm text-(--text-secondary)">Connected</span>
+                    <span className="rounded-full border border-(--border) bg-(--accent-soft) px-3 py-1 text-sm text-(--text-secondary)">Connected</span>
                     <button
                       type="button"
                       onClick={() => { setDisconnectError(''); setServiceToDisconnect(service); }}

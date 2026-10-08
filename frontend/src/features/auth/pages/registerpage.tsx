@@ -46,7 +46,7 @@ function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Your email"
             className="
-              rounded-lg border border-(--border) bg-(--card)
+              rounded-lg border border-(--border-input) bg-(--card)
               px-3 py-2.5 text-[15px] text-(--text-primary)
               outline-none transition
               focus-visible:border-(--accent)
@@ -67,7 +67,7 @@ function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Your password"
             className="
-              rounded-lg border border-(--border) bg-(--card)
+              rounded-lg border border-(--border-input) bg-(--card)
               px-3 py-2.5 text-[15px] text-(--text-primary)
               outline-none transition
               focus-visible:border-(--accent)

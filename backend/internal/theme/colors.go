@@ -1,11 +1,11 @@
 package theme
 
 const (
-	ColorBackground      = "#f5f5f4"
+	ColorBackground      = "#f8f2e6"
 	ColorCard            = "#ffffff"
-	ColorBorder          = "#e2e2df"
-	ColorTextPrimary     = "#1A1F2B"
-	ColorTextSecondary   = "#6B7280"
-	ColorAccent          = "#3b82f6"
-	ColorAccentSecondary = "#D9502F"
+	ColorBorder          = "#d6e2b3"
+	ColorTextPrimary     = "#1f2a14"
+	ColorTextSecondary   = "#4b5e34"
+	ColorAccent          = "#4b5e34"
+	ColorAccentSecondary = "#b42318"
 )

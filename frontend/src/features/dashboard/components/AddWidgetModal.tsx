@@ -254,7 +254,7 @@ export default function AddWidgetModal({
                 Manage services
               </Link>
               <div className="flex justify-end">
-                <button type="button" onClick={onClose} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background)">
+                <button type="button" onClick={onClose} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--accent-soft)">
                   Cancel
                 </button>
               </div>
@@ -277,7 +277,7 @@ export default function AddWidgetModal({
                         ...current,
                         show_progress: current.show_progress === '1' ? '0' : '1',
                       }))}
-                      className={`relative h-6 w-11 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2 ${
+                      className={`relative h-6 w-11 rounded-full border border-(--border-input) transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2 ${
                         values.show_progress === '1' ? 'bg-(--accent)' : 'bg-(--border)'
                       }`}
                     >
@@ -306,7 +306,7 @@ export default function AddWidgetModal({
                         ...current,
                         item_type: current.item_type === 'tracks' ? 'artists' : 'tracks',
                       }))}
-                      className={`relative h-6 w-11 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2 ${
+                      className={`relative h-6 w-11 rounded-full border border-(--border-input) transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:ring-offset-2 ${
                         values.item_type === 'tracks' ? 'bg-(--accent)' : 'bg-(--border)'
                       }`}
                     >
@@ -328,7 +328,7 @@ export default function AddWidgetModal({
                     id="widget-param-time-range"
                     value={values.time_range ?? 'medium_term'}
                     onChange={(event) => setValues((current) => ({ ...current, time_range: event.target.value }))}
-                    className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-(--border-input) bg-(--card) px-3 py-2 text-sm"
                   >
                     <option value="short_term">Last 4 weeks</option>
                     <option value="medium_term">Last 6 months</option>
@@ -350,7 +350,7 @@ export default function AddWidgetModal({
                         pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
                         value={values.datetime_date ?? ''}
                         onChange={(event) => setValues((current) => ({ ...current, datetime_date: event.target.value }))}
-                        className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-(--border-input) bg-(--card) px-3 py-2 text-sm"
                       />
                     </div>
                     <div>
@@ -364,7 +364,7 @@ export default function AddWidgetModal({
                         pattern="[0-9]{2}:[0-9]{2}"
                         value={values.datetime_time ?? ''}
                         onChange={(event) => setValues((current) => ({ ...current, datetime_time: event.target.value }))}
-                        className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                        className="w-full rounded-md border border-(--border-input) bg-(--card) px-3 py-2 text-sm"
                       />
                     </div>
                   </div>
@@ -378,7 +378,7 @@ export default function AddWidgetModal({
                     type={param.type === 'integer' ? 'number' : 'text'}
                     value={values[param.name] ?? ''}
                     onChange={(event) => setValues((current) => ({ ...current, [param.name]: event.target.value }))}
-                    className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-(--border-input) bg-(--card) px-3 py-2 text-sm"
                   />
                 </div>
               ))}
@@ -393,7 +393,7 @@ export default function AddWidgetModal({
                   max={21600}
                   value={refreshSeconds}
                   onChange={(event) => setRefreshSeconds(event.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-(--border-input) bg-(--card) px-3 py-2 text-sm"
                 />
                 <p className="mt-1 text-xs text-(--text-secondary)">Between 60 and 21600 seconds</p>
               </div>
@@ -405,7 +405,7 @@ export default function AddWidgetModal({
                     id="widget-size"
                     value={size}
                     onChange={(event) => setSize(event.target.value as WidgetSize)}
-                    className="w-full rounded-md border border-(--border) bg-(--card) px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-(--border-input) bg-(--card) px-3 py-2 text-sm"
                   >
                     {SIZES_ORDER.filter((candidate) => selected[1].allowedSizes.includes(candidate)).map((candidate) => (
                       <option key={candidate} value={candidate}>{candidate}</option>
@@ -416,12 +416,12 @@ export default function AddWidgetModal({
 
               <div className="flex justify-between gap-2 pt-2">
                 {editing ? <span /> : (
-                  <button type="button" disabled={adding} onClick={() => { setSelected(null); setError(''); }} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background) disabled:opacity-50">
+                  <button type="button" disabled={adding} onClick={() => { setSelected(null); setError(''); }} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--accent-soft) disabled:opacity-50">
                     Back
                   </button>
                 )}
                 <div className="flex gap-2">
-                  <button type="button" disabled={adding} onClick={onClose} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background) disabled:opacity-50">
+                  <button type="button" disabled={adding} onClick={onClose} className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--accent-soft) disabled:opacity-50">
                     Cancel
                   </button>
                   <button type="submit" disabled={adding} className="rounded-md bg-(--accent) px-4 py-2 text-sm font-medium text-(--text-on-accent) disabled:opacity-50">

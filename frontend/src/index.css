@@ -4,17 +4,6 @@
   --background: #f8f2e6;
   --card: #ffffff;
   --border: #d6e2b3;
-  --text-primary: #1f2a14;
-  --text-secondary: #4b5e34;
-  --text-on-accent: #ffffff;
-  --accent: #4b5e34;
-  --accent-secondary: #b42318;
-}
-
-/* :root {
-  --background: #f8f2e6;
-  --card: #ffffff;
-  --border: #d6e2b3;
   --border-input: #4b5e34;
   --text-primary: #1f2a14;
   --text-secondary: #4b5e34;
@@ -23,7 +12,7 @@
   --accent-soft: #d6e2b3;
   --accent-mid: #7aa05a;
   --accent-secondary: #b42318;
-} */
+}
 
 html, body, #root {
   height: 100%;
