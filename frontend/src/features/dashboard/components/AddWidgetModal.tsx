@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError, type WidgetInstance, type WidgetSize } from '../../shared/api';
 import { findFreeSpot } from '../tools/findFreeSpot';
 import { WIDGETS, type WidgetDefinition } from '../widgets/registry';
+import { SERVICE_ICONS } from '../../shared/servicesIcons'
 
 type Props = {
   open: boolean;
@@ -181,7 +182,14 @@ export default function AddWidgetModal({
                         onClick={() => chooseWidget(key, definition)}
                         className="w-full text-left text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {definition.label} <span className="text-(--text-secondary)">({definition.service})</span>
+                        <span className="flex items-center gap-3">
+                          {SERVICE_ICONS[definition.service] && (
+                            <img src={SERVICE_ICONS[definition.service]} alt="" className="h-6 w-6 shrink-0 object-contain" />
+                          )}
+                          <span>
+                            {definition.label} <span className="text-(--text-secondary)">({definition.service})</span>
+                          </span>
+                        </span>
                       </button>
                       {locked && (
                         <p className="mt-1 text-sm text-(--text-secondary)">
