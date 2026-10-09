@@ -35,11 +35,11 @@ function SpotifyCurrentlyPlayingWidget({ config, refreshSeconds }: WidgetProps) 
       {data?.playing && (
         <div className="flex flex-col gap-2">
           <div>
-            <h3 className="break-words font-medium text-(--text-primary)">{data.track_name}</h3>
-            <p className="break-words text-sm text-(--text-secondary)">
+            <h3 className="wrap-break-word font-medium text-(--text-primary)">{data.track_name}</h3>
+            <p className="wrap-break-word text-sm text-(--text-secondary)">
               {data.artists?.join(', ')}
             </p>
-            <p className="break-words text-xs text-(--text-secondary)">{data.album_name}</p>
+            <p className="wrap-break-word text-xs text-(--text-secondary)">{data.album_name}</p>
           </div>
 
           {showProgress && data.duration_ms !== undefined && (
