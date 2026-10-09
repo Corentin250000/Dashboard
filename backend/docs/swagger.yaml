@@ -398,6 +398,24 @@ definitions:
         example: Team meeting
         type: string
     type: object
+  widgets.ChessMonthRecordResponse:
+    properties:
+      draws:
+        example: 1
+        type: integer
+      games:
+        example: 12
+        type: integer
+      losses:
+        example: 4
+        type: integer
+      win_rate:
+        example: 58.33
+        type: number
+      wins:
+        example: 7
+        type: integer
+    type: object
   widgets.ChessMonthlyGameDetail:
     properties:
       accuracy:
@@ -427,6 +445,9 @@ definitions:
       average_accuracy:
         example: 78.42
         type: number
+      best_rating:
+        example: 1421
+        type: integer
       draws:
         example: 1
         type: integer
@@ -444,6 +465,12 @@ definitions:
         items:
           $ref: '#/definitions/widgets.ChessOpeningStats'
         type: array
+      rating:
+        example: 1350
+        type: integer
+      time_class:
+        example: rapid
+        type: string
       total_games:
         example: 12
         type: integer
@@ -498,6 +525,8 @@ definitions:
       best_rating:
         example: 1421
         type: integer
+      month_record:
+        $ref: '#/definitions/widgets.ChessMonthRecordResponse'
       rating:
         example: 1350
         type: integer
@@ -1116,7 +1145,8 @@ paths:
     get:
       description: Public route. Return a player's monthly global result counts, average
         accuracy, the three most frequent openings, and essential details for each
-        game.
+        game. The API returns every game present in Chess.com's monthly archive response
+        and does not truncate the list.
       parameters:
       - description: Chess.com username
         example: ChessPlayer42
@@ -1140,11 +1170,22 @@ paths:
         name: month
         required: true
         type: integer
+      - description: Optional time class filter
+        enum:
+        - rapid
+        - blitz
+        - bullet
+        example: rapid
+        in: query
+        name: time_class
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: Monthly Chess.com statistics and games.
+          description: Monthly Chess.com statistics and games. When time_class is
+            provided, counters, accuracy, openings and games are filtered by that
+            cadence; rating and best_rating are also returned.
           schema:
             $ref: '#/definitions/widgets.ChessMonthlyStatsResponse'
         "400":
@@ -1164,8 +1205,9 @@ paths:
       - Chess widgets
   /api/chess/stats:
     get:
-      description: Public route. Return the current and best Chess.com rating, plus
-        the global wins, losses, draws and win rate for rapid, blitz or bullet.
+      description: Public route. Return the current and best Chess.com rating, global
+        results, and the current calendar month's results in UTC for rapid, blitz
+        or bullet.
       parameters:
       - description: Chess.com username
         example: ChessPlayer42
