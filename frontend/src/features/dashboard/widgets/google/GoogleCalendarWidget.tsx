@@ -99,8 +99,10 @@ function GoogleCalendarWidget({ config, refreshSeconds }: WidgetProps) {
     else current.push({ key, date: start, events: [event] });
     return current;
   }, []);
-  const showHeadings = (groups?.length ?? 0) > 1;
   const today = dateKey(now);
+  const showHeadings = groups
+    ? groups.length > 1 || groups.some((group) => group.key !== today)
+    : false;
   const tomorrowDate = new Date(now);
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrow = dateKey(tomorrowDate);
