@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import WidgetCard from '../components/WidgetCard';
-import AddWidgetModal from '../components/AddWidgetModal';
+import AddWidgetModal from '../components/addWidget/AddWidgetModal';
 import { api, ApiError, type ServiceInfo, type WidgetInstance } from '../../shared/api';
 import { buildLayouts } from '../tools/buildLayouts';
 import { WIDGETS } from '../widgets/registry';
