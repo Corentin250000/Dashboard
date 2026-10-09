@@ -4,6 +4,7 @@ import SncfDeparturesWidget from './sncf/SncfDeparturesWidget';
 import SncfJourneysWidget from './sncf/SncfJourneysWidget';
 import SpotifyCurrentlyPlayingWidget from './spotify/SpotifyCurrentlyPlayingWidget';
 import SpotifyTopWidget from './spotify/SpotifyTopWidget';
+import GoogleCalendarWidget from './google/GoogleCalendarWidget';
 
 export type WidgetProps = {
   config: Record<string, string>;
@@ -64,6 +65,18 @@ export const WIDGETS: Record<string, WidgetDefinition> = {
     params: [
       { name: 'item_type', type: 'string', label: 'Top type', defaultValue: 'tracks' },
       { name: 'time_range', type: 'string', label: 'Time range', defaultValue: 'medium_term' },
+    ],
+  },
+  'calendar.upcoming_events': {
+    label: 'Calendar events',
+    service: 'calendar',
+    requiresAccount: true,
+    component: GoogleCalendarWidget,
+    allowedSizes: ['tall', 'big'],
+    defaultRefreshSeconds: 300,
+    params: [
+      { name: 'maxResults', type: 'integer', label: 'Number of events (1-50)', defaultValue: '10' },
+      { name: 'period', type: 'string', label: 'Period', defaultValue: 'day' },
     ],
   },
 };
