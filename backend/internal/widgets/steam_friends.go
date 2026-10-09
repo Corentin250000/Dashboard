@@ -124,18 +124,6 @@ type SteamOnlineFriend struct {
 	Status      string            `json:"status" example:"En ligne"`
 	CurrentGame *SteamCurrentGame `json:"currentGame"`
 }
-type SteamFriendStatusResponse struct {
-	Results []SteamFriendStatus `json:"results"`
-}
-type SteamFriendStatus struct {
-	SteamID           string            `json:"steamId" example:"76561198978982665"`
-	Pseudo            string            `json:"pseudo" example:"SteamFriend"`
-	ProfileVisibility string            `json:"profileVisibility" example:"public"`
-	ProfileConfigured bool              `json:"profileConfigured" example:"true"`
-	Status            string            `json:"status" example:"En ligne"`
-	CurrentGame       *SteamCurrentGame `json:"currentGame"`
-	LastLogoff        *time.Time        `json:"lastLogoff" example:"2026-10-05T19:51:31Z"`
-}
 type SteamCurrentGame struct {
 	ID   string  `json:"id" example:"730"`
 	Name *string `json:"name,omitempty" example:"Counter-Strike 2"`
@@ -262,7 +250,7 @@ func Online(c fiber.Ctx) error {
 // @Param pseudo query string false "Friend pseudo, required when mode=search" example(SteamFriend)
 // @Param limit query int false "Maximum number of online friends" minimum(1) maximum(100) default(5) example(5)
 // @Param inGameOnly query bool false "Only return online friends currently playing a game" default(false) example(false)
-// @Success 200 {object} SteamOnlineFriendsResponse "Online Steam friends returned successfully."
+// @Success 200 {object} SteamOnlineFriendsResponse "Steam friends returned successfully for the selected mode."
 // @Failure 400 {object} SteamFriendsBadRequestResponse "Invalid mode, pseudo, limit, or inGameOnly value."
 // @Failure 401 {object} SteamFriendsUnauthorizedResponse "Authentication required."
 // @Failure 403 {object} SteamFriendsPrivateResponse "The Steam account is not connected or the Steam friend list is private."
@@ -292,6 +280,10 @@ func searchFriendByQuery(c fiber.Ctx) error {
 	if searchName == "" || utf8.RuneCountInString(searchName) > 64 {
 		return steamError(c, fiber.StatusBadRequest, "The pseudo must contain between 1 and 64 characters.")
 	}
+	limit, err := parseOnlineLimit(c.Query("limit"))
+	if err != nil {
+		return steamError(c, fiber.StatusBadRequest, err.Error())
+	}
 	ownerID, err := steamIDForUser(user.ID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -302,7 +294,7 @@ func searchFriendByQuery(c fiber.Ctx) error {
 	pattern := "%" + escapeLike(searchName) + "%"
 	var friends []models.SteamFriend
 	load := func() error {
-		return db.WithContext(c.Context()).Where("owner_steam_id = ? AND search_name ILIKE ? ESCAPE '\\'", ownerID, pattern).Order("persona_name ASC").Limit(10).Find(&friends).Error
+		return db.WithContext(c.Context()).Where("owner_steam_id = ? AND search_name ILIKE ? ESCAPE '\\'", ownerID, pattern).Order("persona_name ASC").Find(&friends).Error
 	}
 	if err := load(); err != nil {
 		return steamError(c, fiber.StatusInternalServerError, "Unable to search Steam friends.")
@@ -341,9 +333,13 @@ func searchFriendByQuery(c fiber.Ctx) error {
 			break
 		}
 	}
-	response := SteamFriendStatusResponse{Results: make([]SteamFriendStatus, 0, len(friends))}
-	for _, friend := range friends {
-		response.Results = append(response.Results, toStatus(friend))
+	total := len(friends)
+	if limit > total {
+		limit = total
+	}
+	response := SteamOnlineFriendsResponse{TotalOnline: total, Returned: limit, Friends: make([]SteamOnlineFriend, 0, limit)}
+	for _, friend := range friends[:limit] {
+		response.Friends = append(response.Friends, toOnlineFriend(friend))
 	}
 	return c.JSON(response)
 }
@@ -474,16 +470,6 @@ func escapeLike(value string) string {
 	return strings.ReplaceAll(value, "_", `\_`)
 }
 
-func toStatus(friend models.SteamFriend) SteamFriendStatus {
-	result := SteamFriendStatus{SteamID: friend.FriendSteamID, Pseudo: friend.PersonaName, ProfileVisibility: "private", ProfileConfigured: friend.ProfileConfigured, Status: translatedStatus(friend), LastLogoff: friend.LastLogoffAt}
-	if friend.ProfileVisibility == 3 {
-		result.ProfileVisibility = "public"
-	}
-	if friend.CurrentGameID != nil {
-		result.CurrentGame = &SteamCurrentGame{ID: *friend.CurrentGameID, Name: friend.CurrentGameName}
-	}
-	return result
-}
 func translatedStatus(friend models.SteamFriend) string {
 	if friend.ProfileVisibility != 3 && friend.PersonaState == 0 {
 		return "Statut masqué"

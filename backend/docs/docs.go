@@ -872,7 +872,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Online Steam friends returned successfully.",
+                        "description": "Steam friends returned successfully for the selected mode.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamOnlineFriendsResponse"
                         }
