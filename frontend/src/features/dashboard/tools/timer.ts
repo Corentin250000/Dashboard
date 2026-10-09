@@ -1,33 +1,68 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { ApiError } from '../../shared/api';
+import { WidgetRefreshContext } from './refreshContext';
 
 export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, restartKey: string)
 {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState(false);
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  const { nonce, setBusy } = useContext(WidgetRefreshContext);
+  const currentKey = useRef(restartKey);
+  const handledNonce = useRef(nonce);
+  currentKey.current = restartKey;
+
+  const [storedData, setStoredData] = useState<{ key: string; value: T } | null>(null);
+  const [storedError, setStoredError] = useState<{
+    key: string;
+    error: boolean;
+    errorStatus: number | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (!restartKey) return;
+    const requestKey = restartKey;
+    let active = true;
+    const manual = handledNonce.current !== nonce;
+    handledNonce.current = nonce;
+    setStoredError({ key: requestKey, error: false, errorStatus: null });
 
-    const load = () => {
+    if (!requestKey) return () => {
+      active = false;
+      setBusy(false);
+    };
+
+    const load = (showBusy: boolean) => {
+      if (showBusy) setBusy(true);
       fetcher()
-        .then((res) => {
-          setData(res);
-          setError(false);
-          setErrorStatus(null);
+        .then((value) => {
+          if (!active || currentKey.current !== requestKey) return;
+          setStoredData({ key: requestKey, value });
+          setStoredError({ key: requestKey, error: false, errorStatus: null });
         })
         .catch((cause: unknown) => {
-          setError(true);
-          setErrorStatus(cause instanceof ApiError ? cause.status : null);
+          if (!active || currentKey.current !== requestKey) return;
+          setStoredError({
+            key: requestKey,
+            error: true,
+            errorStatus: cause instanceof ApiError ? cause.status : null,
+          });
+        })
+        .finally(() => {
+          if (showBusy && active) setBusy(false);
         });
     };
 
-    load();
-    const id = setInterval(load, intervalMs);
-    return () => clearInterval(id);
+    load(manual);
+    const id = setInterval(() => load(false), intervalMs);
+    return () => {
+      active = false;
+      clearInterval(id);
+      setBusy(false);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restartKey, intervalMs]);
+  }, [restartKey, intervalMs, nonce]);
 
-  return { data, error, errorStatus };
+  const currentError = storedError?.key === restartKey ? storedError : null;
+  return {
+    data: storedData?.key === restartKey ? storedData.value : null,
+    error: currentError?.error ?? false,
+    errorStatus: currentError?.errorStatus ?? null,
+  };
 }
