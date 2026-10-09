@@ -1,22 +1,23 @@
 # Dashboard
 
-> **Status: foundation in place, features under construction.** The Docker setup,
-> API contract, local account authentication, Swagger reference and secrets
-> management are working. Services and widgets are being implemented next.
+> **Status: working application.** Authentication, the dashboard grid, OAuth
+> services and widgets are implemented. Remaining work: admin section and
+> final documentation.
 
 ## What is this?
 
 Dashboard is a **customizable real-time dashboard**: once registered, a user
-subscribes to services (weather, RSS, GitHub, …), places configured **widgets**
+subscribes to services (SNCF, Spotify, Google Calendar, Steam, Chess.com),
+places configured **widgets**, places configured **widgets**
 on a personal page, and each widget refreshes on its own timer — like a
 browser new-tab page turned into a control panel.
 
-**Typical uses:** morning overview (weather + agenda + news), dev monitoring
-(GitHub activity, service uptime), market watch (exchange rates, prices).
+**Typical uses:** morning overview (agenda + train departures), music
+(currently playing, top tracks), gaming (Steam friends, chess ratings).
 
-**Current state:** the running app exposes the API contract, local account
-authentication and a frontend authentication shell. Services and widgets are
-not usable yet — see *Features* below for what is live vs planned.
+**Current state:** users can register, connect services and build a dashboard
+with eight widgets across five services (SNCF, Spotify, Google Calendar,
+Steam, Chess.com). See *Features* below.
 
 ## Features, services and widgets
 
@@ -24,11 +25,12 @@ not usable yet — see *Features* below for what is live vs planned.
 |---|---|
 | `GET /about.json` (service/widget catalog) | ✅ Live |
 | `GET /health`, `GET /` | ✅ Live |
-| Frontend authentication shell (React, served on port 8081) | ✅ Live |
 | User registration / login | ✅ Live, email confirmation required |
 | Admin section | 🔲 Planned |
-| Services & widgets (weather, RSS, GitHub, …) | 🔲 In progress — declared in `backend/internal/about/about.go` (`Registry()`), which is the single source of truth feeding `/about.json` |
-| Per-widget timer refresh | 🔲 Planned |
+| Services & widgets (SNCF, Spotify, Google Calendar, Steam, Chess.com) | ✅ Live — declared in `backend/internal/about/about.go` (`Registry()`), which feeds `/about.json` |
+| Dashboard grid (add, configure, move, delete widgets) | ✅ Live |
+| Services with OAuth (Spotify, Google, Steam) | ✅ Live |
+| Widgets refresh (automatic timer + manual button) | ✅ Live |
 
 ### Spotify widgets
 
@@ -111,7 +113,7 @@ cd frontend && npm ci && npm run dev   # dev server with HMR
 | Part | Technology | Notes |
 |---|---|---|
 | Backend | **Go + Fiber** | Graceful shutdown, Swagger UI, CORS for local development |
-| Frontend | **React 19 + Vite 8 + TypeScript** | Served in prod via `vite preview`; `VITE_API_URL` baked at build time |
+| Frontend | **React 19 + Vite + TypeScript + Tailwind v4** | Grid with react-grid-layout; details in [`technical_documentation_frontend.md`](docs/technical_documentation_frontend.md) |
 | Database | **PostgreSQL 16** | Reachable only inside the Compose network (`db:5432`) |
 | Secrets | **Doppler** | `doppler run` wrappers; see [`docs/doppler.md`](docs/doppler.md) |
 | Build/run | **Docker Compose** | Single entrypoint: `docker-compose up` |
@@ -123,11 +125,11 @@ repo/
 │   ├── docs/               generated Swagger/OpenAPI files
 │   ├── internal/          API handlers, including authentication
 │   └── entrypoint.sh      starts with Doppler if DOPPLER_TOKEN is set, else directly
-├── frontend/              React+Vite app (Dockerfile: vite preview on :8081)
+├── frontend/              React app (src/features/…), Dockerfile: vite preview on :8081
 ├── db/                    Postgres image + Doppler wrapper entrypoint
 ├── docker-compose.yml     services: server (:8080), db (internal), client (:8081)
 ├── .env.example           all variables, Doppler (Method A) and classic (Method B)
-└── docs/doppler.md        secrets management (English)
+└── docs/                  doppler.md (secrets), technical_documentation_frontend.md  technical_documentation_backend.md
 ```
 
 ### Key flows (the two parts worth understanding)
@@ -153,5 +155,5 @@ GET /about.json → backend/internal/about/about.go :: Registry()
 
 - Never commit `.env` or `doppler.yaml` (gitignored). Only `.env.example` documents variables.
 - Backend: standard library first; run `go vet ./...` before pushing.
-- Frontend: call the API via `` `${import.meta.env.VITE_API_URL}/...` `` so the backend URL stays configurable at build time.
+- Frontend: all API calls go through `src/features/shared/api.ts` (`API_URL` comes from `VITE_API_URL`, set at build time).
 - New secret? Add it in Doppler, wire it as `${VAR:-}` in `docker-compose.yml` if needed at Compose level, document it in `.env.example`.
