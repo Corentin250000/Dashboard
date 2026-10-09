@@ -4,6 +4,7 @@ import SpotifyIcon from '../../assets/icons/spotify.svg';
 import SteamIcon from '../../assets/icons/steam.svg';
 import SncfIcon from '../../assets/icons/sncf.svg';
 import ChessIcon from '../../assets/icons/chess.svg';
+import CalendarIcon from '../../assets/icons/calendar.svg'
 
 export const SERVICE_ICONS: Record<string, string> = {
   github: GithubIcon,
@@ -12,4 +13,5 @@ export const SERVICE_ICONS: Record<string, string> = {
   steam: SteamIcon,
   sncf: SncfIcon,
   chess: ChessIcon,
+  calendar: CalendarIcon,
 };

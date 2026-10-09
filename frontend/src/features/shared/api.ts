@@ -39,6 +39,15 @@ export type SpotifyTopItem = {
   rank: number;
 };
 
+export type CalendarEvent = {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  location?: string;
+};
+
 export type WidgetSize = 'small' | 'wide' | 'tall' | 'big';
 
 export type WidgetInstance = {
@@ -78,7 +87,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       const body = await response.json();
       if (typeof body.error === 'string') message = body.error;
       else if (typeof body.message === 'string') message = body.message;
-    } catch { /* réponse non JSON */ }
+    } catch { /* Non-JSON response */ }
     throw new ApiError(message, response.status);
   }
   if (response.status === 204) return undefined as T;
@@ -105,6 +114,19 @@ export const api = {
     resendConfirmation: () => request<{ status: 'ok' }>('/confirm/resend', { method: 'POST' }),
     me: () => request<User>('/auth/me', { method: 'GET' }),
     deleteAccount: () => request<{ message: string }>('/api/me/account', { method: 'DELETE' }),
+// Services :
+    getServices: () => request<{ services: ServiceInfo[] }>('/api/me/services', { method: 'GET' }),
+    disconnectService: (name: string) =>
+      request<void>(`/api/me/services/${encodeURIComponent(name)}/connection`, { method: 'DELETE' }),
+// Widgets :
+    getWidgets: () => request<{ widgets: WidgetInstance[] }>('/api/me/widgets'),
+    createWidget: (w: WidgetInput) =>
+      request<WidgetInstance>('/api/me/widgets', { method: 'POST', body: JSON.stringify(w) }),
+    updateWidget: (id: string, patch: Partial<WidgetInput>) =>
+      request<WidgetInstance>(`/api/me/widgets/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    deleteWidget: (id: string) =>
+      request<void>(`/api/me/widgets/${id}`, { method: 'DELETE' }),
+// Service Widgets :
     getSncfDepartures: (station: string) =>
       request<{ departures: SncfDeparture[] }>(`/api/sncf/departures`,
         { method: 'POST',
@@ -121,16 +143,13 @@ export const api = {
       const query = new URLSearchParams({ item_type: itemType, time_range: timeRange });
       return request<{ items: SpotifyTopItem[] }>(`/api/spotify/top?${query.toString()}`);
     },
-// Services :
-    getServices: () => request<{ services: ServiceInfo[] }>('/api/me/services', { method: 'GET' }),
-    disconnectService: (name: string) =>
-      request<void>(`/api/me/services/${encodeURIComponent(name)}/connection`, { method: 'DELETE' }),
-// Widgets :
-    getWidgets: () => request<{ widgets: WidgetInstance[] }>('/api/me/widgets'),
-    createWidget: (w: WidgetInput) =>
-      request<WidgetInstance>('/api/me/widgets', { method: 'POST', body: JSON.stringify(w) }),
-    updateWidget: (id: string, patch: Partial<WidgetInput>) =>
-      request<WidgetInstance>(`/api/me/widgets/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
-    deleteWidget: (id: string) =>
-      request<void>(`/api/me/widgets/${id}`, { method: 'DELETE' }),
+    getCalendarEvents: (maxResults: number, period: 'day' | 'week') => {
+      const query = new URLSearchParams({ maxResults: String(maxResults) });
+      if (period === 'week') {
+        const now = new Date();
+        query.set('timeMin', now.toISOString());
+        query.set('timeMax', new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString());
+      }
+      return request<CalendarEvent[]>(`/api/calendar/events?${query.toString()}`);
+    },
 };

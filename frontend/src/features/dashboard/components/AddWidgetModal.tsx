@@ -319,6 +319,21 @@ export default function AddWidgetModal({
                     <span className="text-sm text-(--text-secondary)">Tracks</span>
                   </div>
                 </div>
+              ) : param.name === 'period' ? (
+                <div key={param.name}>
+                  <label htmlFor="widget-param-period" className="mb-1 block text-sm font-medium">
+                    Period
+                  </label>
+                  <select
+                    id="widget-param-period"
+                    value={values.period ?? 'day'}
+                    onChange={(event) => setValues((current) => ({ ...current, period: event.target.value }))}
+                    className="w-full rounded-md border border-(--border-input) bg-(--card) px-3 py-2 text-sm"
+                  >
+                    <option value="day">Next 24 hours</option>
+                    <option value="week">Next 7 days</option>
+                  </select>
+                </div>
               ) : param.name === 'time_range' ? (
                 <div key={param.name}>
                   <label htmlFor="widget-param-time-range" className="mb-1 block text-sm font-medium">

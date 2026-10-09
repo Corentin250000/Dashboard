@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { ApiError } from '../../shared/api';
 
 export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, restartKey: string)
 {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   useEffect(() => {
     if (!restartKey) return;
@@ -13,8 +15,12 @@ export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, resta
         .then((res) => {
           setData(res);
           setError(false);
+          setErrorStatus(null);
         })
-        .catch(() => setError(true));
+        .catch((cause: unknown) => {
+          setError(true);
+          setErrorStatus(cause instanceof ApiError ? cause.status : null);
+        });
     };
 
     load();
@@ -23,5 +29,5 @@ export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, resta
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restartKey, intervalMs]);
 
-  return { data, error };
+  return { data, error, errorStatus };
 }
