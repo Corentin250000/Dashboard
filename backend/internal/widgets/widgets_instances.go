@@ -132,6 +132,12 @@ func SeedCatalog(database *gorm.DB) error {
 			Description: "Steam account and game data",
 			AuthType:    "oauth2",
 		},
+		{
+			Name:        "chess",
+			DisplayName: "Chess.com",
+			Description: "Public Chess.com player data",
+			AuthType:    "none",
+		},
 	} {
 		var service models.Service
 		if err := database.Where("name = ?", serviceData.Name).FirstOrCreate(&service, serviceData).Error; err != nil {
@@ -335,6 +341,72 @@ func SeedCatalog(database *gorm.DB) error {
 	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
 		allowed := models.WidgetAllowedSize{WidgetID: calendarWidget.ID, SizeCode: sizeCode}
 		if err := database.Where("widget_id = ? AND size_code = ?", calendarWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
+		}
+	}
+
+	chessService := models.Service{}
+	if err := database.Where("name = ?", "chess").First(&chessService).Error; err != nil {
+		return err
+	}
+	chessWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", chessService.ID, "stats").FirstOrCreate(&chessWidget, models.Widget{
+		ServiceID:   chessService.ID,
+		Name:        "stats",
+		DisplayName: "Chess.com stats",
+		Description: "Display a Chess.com player's global rating and game record",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct {
+		name, paramType string
+	}{
+		{name: "username", paramType: "string"},
+		{name: "time_class", paramType: "string"},
+	} {
+		if err := database.Where("widget_id = ? AND name = ?", chessWidget.ID, paramData.name).FirstOrCreate(&models.WidgetParam{}, models.WidgetParam{
+			WidgetID:   chessWidget.ID,
+			Name:       paramData.name,
+			Type:       paramData.paramType,
+			IsRequired: true,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: chessWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", chessWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
+		}
+	}
+	monthlyChessWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", chessService.ID, "monthly_stats").FirstOrCreate(&monthlyChessWidget, models.Widget{
+		ServiceID:   chessService.ID,
+		Name:        "monthly_stats",
+		DisplayName: "Chess.com monthly stats",
+		Description: "Display a Chess.com player's statistics and games for a month",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct {
+		name, paramType string
+	}{
+		{name: "username", paramType: "string"},
+		{name: "year", paramType: "integer"},
+		{name: "month", paramType: "integer"},
+	} {
+		if err := database.Where("widget_id = ? AND name = ?", monthlyChessWidget.ID, paramData.name).FirstOrCreate(&models.WidgetParam{}, models.WidgetParam{
+			WidgetID:   monthlyChessWidget.ID,
+			Name:       paramData.name,
+			Type:       paramData.paramType,
+			IsRequired: true,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: monthlyChessWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", monthlyChessWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
 			return err
 		}
 	}
