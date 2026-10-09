@@ -48,6 +48,19 @@ export type CalendarEvent = {
   location?: string;
 };
 
+export type SteamFriend = {
+  steamId: string;
+  pseudo: string;
+  status: string;
+  currentGame?: { id: string; name: string };
+};
+
+export type SteamFriendsResponse = {
+  friends: SteamFriend[];
+  returned: number;
+  totalOnline: number;
+};
+
 export type WidgetSize = 'small' | 'wide' | 'tall' | 'big';
 
 export type WidgetInstance = {
@@ -151,5 +164,13 @@ export const api = {
         query.set('timeMax', new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString());
       }
       return request<CalendarEvent[]>(`/api/calendar/events?${query.toString()}`);
+    },
+    getSteamFriends: (limit: number, inGameOnly: boolean) => {
+      const query = new URLSearchParams({
+        mode: 'online',
+        limit: String(limit),
+        inGameOnly: String(inGameOnly),
+      });
+      return request<SteamFriendsResponse>(`/api/steam/friends?${query.toString()}`);
     },
 };

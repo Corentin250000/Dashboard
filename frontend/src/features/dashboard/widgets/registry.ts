@@ -5,6 +5,7 @@ import SncfJourneysWidget from './sncf/SncfJourneysWidget';
 import SpotifyCurrentlyPlayingWidget from './spotify/SpotifyCurrentlyPlayingWidget';
 import SpotifyTopWidget from './spotify/SpotifyTopWidget';
 import GoogleCalendarWidget from './google/GoogleCalendarWidget';
+import SteamFriendsWidget from './steam/SteamFriendsWidget';
 
 export type WidgetProps = {
   config: Record<string, string>;
@@ -97,6 +98,18 @@ export const WIDGETS: Record<string, WidgetDefinition> = {
         name: 'period', type: 'string', label: 'Period', defaultValue: 'day', field: 'select',
         options: [{ value: 'day', label: 'Next 24 hours' }, { value: 'week', label: 'Next 7 days' }],
       },
+    ],
+  },
+  'steam.friends': {
+    label: 'Steam friends online',
+    service: 'steam',
+    requiresAccount: true,
+    component: SteamFriendsWidget,
+    allowedSizes: ['tall', 'big'],
+    defaultRefreshSeconds: 60,
+    params: [
+      { name: 'limit', type: 'integer', label: 'Number of friends (1-100)', defaultValue: '5' },
+      { name: 'inGameOnly', type: 'integer', label: 'Only friends in game', defaultValue: '0', field: 'switch' },
     ],
   },
 };
