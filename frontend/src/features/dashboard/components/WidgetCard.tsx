@@ -1,5 +1,7 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { Settings, Trash2 } from 'lucide-react';
+import { RefreshCw, Settings, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { WidgetRefreshContext } from '../tools/refreshContext';
 
 type Props = {
   title: string;
@@ -25,6 +27,12 @@ export default function WidgetCard({
       onSelect();
     }
   };
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshValue = useMemo(
+    () => ({ nonce: refreshNonce, setBusy: setRefreshing }),
+    [refreshNonce],
+  );
 
   return (
     <article
@@ -39,6 +47,18 @@ export default function WidgetCard({
       <header className="drag-handle flex cursor-grab items-center justify-between border-b border-(--border) bg-(--accent-soft) px-3 py-2">
         <h2 className="min-w-0 truncate font-medium text-(--text-primary)">{title}</h2>
         <div className="no-drag flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            className="rounded-md p-1.5 text-(--text-secondary) hover:bg-(--accent) hover:text-(--text-on-accent) focus-visible:ring-2 focus-visible:ring-(--accent)"
+            aria-label="Refresh widget"
+            disabled={refreshing}
+            onClick={(event) => {
+              event.stopPropagation();
+              setRefreshNonce((n) => n + 1);
+            }}
+          >
+            <RefreshCw size={16} aria-hidden="true" className={refreshing ? 'animate-spin motion-reduce:animate-none' : ''} />
+          </button>
           {onConfigure && (
             <button
               type="button"
@@ -67,7 +87,9 @@ export default function WidgetCard({
           )}
         </div>
       </header>
-      <div className="flex-1 overflow-auto p-3">{children}</div>
+      <WidgetRefreshContext.Provider value={refreshValue}>
+        <div className="flex-1 overflow-auto p-3">{children}</div>
+      </WidgetRefreshContext.Provider>
     </article>
   );
 }
