@@ -8,7 +8,6 @@ export function useTimer<T>(fetcher: () => Promise<T>, intervalMs: number, resta
   const currentKey = useRef(restartKey);
   const handledNonce = useRef(nonce);
   currentKey.current = restartKey;
-
   const [storedData, setStoredData] = useState<{ key: string; value: T } | null>(null);
   const [storedError, setStoredError] = useState<{
     key: string;
