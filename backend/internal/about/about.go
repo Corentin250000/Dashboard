@@ -91,9 +91,12 @@ func Registry() []Service {
 			Widgets: []Widget{
 				{
 					Name:        "friends",
-					Description: "Display the Steam status of a friend searched by pseudo",
+					Description: "Display Steam friends online or search the status of a specific friend",
 					Params: []Param{
+						{Name: "mode", Type: "string"},
 						{Name: "pseudo", Type: "string"},
+						{Name: "limit", Type: "integer"},
+						{Name: "inGameOnly", Type: "integer"},
 					},
 				},
 			},
