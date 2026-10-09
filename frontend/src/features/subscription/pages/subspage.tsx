@@ -94,10 +94,10 @@ function SubscriptionPage() {
                   {service.widgets.length} {service.widgets.length === 1 ? 'widget' : 'widgets'}
                 </p>
                 {!service.requires_connection ? (
-                  <span className="rounded-full border border-(--border) px-3 py-1 text-sm text-(--text-secondary)">Included</span>
+                  <span className="rounded-full border border-(--border) bg-(--accent-soft) px-3 py-1 text-sm text-(--text-secondary)">Included</span>
                 ) : service.connected ? (
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full border border-(--border) px-3 py-1 text-sm text-(--text-secondary)">Connected</span>
+                    <span className="rounded-full border border-(--border) bg-(--accent-soft) px-3 py-1 text-sm text-(--text-secondary)">Connected</span>
                     <button
                       type="button"
                       onClick={() => { setDisconnectError(''); setServiceToDisconnect(service); }}
@@ -131,7 +131,7 @@ function SubscriptionPage() {
             <p className="mb-5 text-sm text-(--text-secondary)">Your widgets for this service will be deleted.</p>
             {disconnectError && <p role="alert" className="mb-4 text-sm text-(--accent-secondary)">{disconnectError}</p>}
             <div className="flex justify-end gap-2">
-              <button type="button" disabled={disconnecting} onClick={closeDisconnectDialog} className="rounded-md border border-(--border) px-4 py-2 text-sm disabled:opacity-50">
+              <button type="button" disabled={disconnecting} onClick={closeDisconnectDialog} className="rounded-md border border-(--border-input) px-4 py-2 text-sm hover:bg-(--accent-soft) disabled:opacity-50">
                 Cancel
               </button>
               <button type="button" disabled={disconnecting} onClick={() => void confirmDisconnect()} className="rounded-md bg-(--accent) px-4 py-2 text-sm font-medium text-(--text-on-accent) disabled:opacity-50">

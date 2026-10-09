@@ -368,6 +368,36 @@ definitions:
         example: dashboard API - see GET /about.json
         type: string
     type: object
+  widgets.CalendarErrorResponse:
+    properties:
+      message:
+        example: Google Calendar is temporarily unavailable.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.CalendarEventDTO:
+    properties:
+      allDay:
+        example: false
+        type: boolean
+      end:
+        example: "2026-10-08T10:00:00+02:00"
+        type: string
+      id:
+        example: event_123
+        type: string
+      location:
+        example: Paris office
+        type: string
+      start:
+        example: "2026-10-08T09:00:00+02:00"
+        type: string
+      title:
+        example: Team meeting
+        type: string
+    type: object
   widgets.CreateWidgetRequest:
     properties:
       config:
@@ -662,42 +692,6 @@ definitions:
         example: Counter-Strike 2
         type: string
     type: object
-  widgets.SteamFriendStatus:
-    properties:
-      currentGame:
-        $ref: '#/definitions/widgets.SteamCurrentGame'
-      lastLogoff:
-        example: "2026-10-05T19:51:31Z"
-        type: string
-      profileConfigured:
-        example: true
-        type: boolean
-      profileVisibility:
-        example: public
-        type: string
-      pseudo:
-        example: chrystoval⁧⁧♛
-        type: string
-      status:
-        example: En ligne
-        type: string
-      steamId:
-        example: "76561198978982665"
-        type: string
-    type: object
-  widgets.SteamFriendStatusRequest:
-    properties:
-      pseudo:
-        example: chrystoval
-        type: string
-    type: object
-  widgets.SteamFriendStatusResponse:
-    properties:
-      results:
-        items:
-          $ref: '#/definitions/widgets.SteamFriendStatus'
-        type: array
-    type: object
   widgets.SteamFriendsBadGatewayResponse:
     properties:
       message:
@@ -725,15 +719,6 @@ definitions:
         example: error
         type: string
     type: object
-  widgets.SteamFriendsServerResponse:
-    properties:
-      message:
-        example: Unable to search Steam friends.
-        type: string
-      status:
-        example: error
-        type: string
-    type: object
   widgets.SteamFriendsUnauthorizedResponse:
     properties:
       message:
@@ -743,14 +728,32 @@ definitions:
         example: error
         type: string
     type: object
-  widgets.SteamFriendsUnavailableResponse:
+  widgets.SteamOnlineFriend:
     properties:
-      message:
-        example: The Steam friends service is not configured.
+      currentGame:
+        $ref: '#/definitions/widgets.SteamCurrentGame'
+      pseudo:
+        example: SteamFriend
         type: string
       status:
-        example: error
+        example: En ligne
         type: string
+      steamId:
+        example: "76561198978982665"
+        type: string
+    type: object
+  widgets.SteamOnlineFriendsResponse:
+    properties:
+      friends:
+        items:
+          $ref: '#/definitions/widgets.SteamOnlineFriend'
+        type: array
+      returned:
+        example: 5
+        type: integer
+      totalOnline:
+        example: 14
+        type: integer
     type: object
   widgets.TrainStationRequest:
     properties:
@@ -936,6 +939,64 @@ paths:
       summary: Service catalog
       tags:
       - system
+  /api/calendar/events:
+    get:
+      description: Return normalized events from the authenticated user's primary
+        Google Calendar.
+      parameters:
+      - default: now
+        description: RFC 3339 period start (defaults to now)
+        example: "2026-10-08T00:00:00+02:00"
+        in: query
+        name: timeMin
+        type: string
+      - default: now + 24h
+        description: RFC 3339 period end (defaults to now + 24 hours)
+        example: "2026-10-09T00:00:00+02:00"
+        in: query
+        name: timeMax
+        type: string
+      - default: 10
+        description: Number of events (1-50)
+        example: 10
+        in: query
+        maximum: 50
+        minimum: 1
+        name: maxResults
+        type: integer
+      - description: Optional text filter; not a request body field
+        example: team meeting
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/widgets.CalendarEventDTO'
+            type: array
+        "400":
+          description: Invalid calendar query parameter.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+        "401":
+          description: Google must be connected or reconnected.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+        "403":
+          description: Calendar API or scope may be missing.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+        "502":
+          description: Google Calendar is temporarily unavailable.
+          schema:
+            $ref: '#/definitions/widgets.CalendarErrorResponse'
+      summary: Google Calendar upcoming events
+      tags:
+      - Google Calendar widgets
   /api/me/account:
     delete:
       description: Permanently delete the authenticated user's account, sessions,
@@ -1002,6 +1063,7 @@ paths:
         enum:
         - spotify
         - google
+        - calendar
         - steam
         in: path
         name: service
@@ -1058,6 +1120,7 @@ paths:
         enum:
         - spotify
         - google
+        - calendar
         - steam
         in: path
         name: service
@@ -1505,37 +1568,53 @@ paths:
       summary: Spotify top items
       tags:
       - Spotify widgets
-  /api/steam/friends/status:
-    post:
-      consumes:
-      - application/json
-      description: Search the connected user's Steam friends with a normalized pseudo.
-        The local friend list is synchronized after Steam connection and refreshed
-        when its data is older than two minutes. Directional Unicode control characters
-        are removed only for searching; the original Steam pseudo is returned unchanged.
+  /api/steam/friends:
+    get:
+      description: Use mode=online to list connected friends or mode=search to find
+        one friend by pseudo. The online mode accepts limit and inGameOnly; search
+        mode uses the same normalized search as the legacy status endpoint.
       parameters:
-      - description: Pseudo to search (1 to 64 Unicode characters)
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/widgets.SteamFriendStatusRequest'
+      - default: online
+        description: View to return
+        enum:
+        - online
+        - search
+        example: online
+        in: query
+        name: mode
+        type: string
+      - description: Friend pseudo, required when mode=search
+        example: SteamFriend
+        in: query
+        name: pseudo
+        type: string
+      - default: 5
+        description: Maximum number of online friends
+        example: 5
+        in: query
+        maximum: 100
+        minimum: 1
+        name: limit
+        type: integer
+      - default: false
+        description: Only return online friends currently playing a game
+        example: false
+        in: query
+        name: inGameOnly
+        type: boolean
       produces:
       - application/json
       responses:
         "200":
-          description: 'Matching friends, limited to 10 results. Exact normalized
-            matches are returned first. Example: {\"results\":[{\"steamId\":\"76561198978982665\",\"pseudo\":\"chrystoval\\u2067\\u2067♛\",\"profileVisibility\":\"public\",\"profileConfigured\":true,\"status\":\"En
-            ligne\",\"currentGame\":{\"id\":\"730\",\"name\":\"Counter-Strike 2\"},\"lastLogoff\":\"2026-10-05T19:51:31Z\"}]}'
+          description: Steam friends returned successfully for the selected mode.
           schema:
-            $ref: '#/definitions/widgets.SteamFriendStatusResponse'
+            $ref: '#/definitions/widgets.SteamOnlineFriendsResponse'
         "400":
-          description: Malformed JSON, empty pseudo, or pseudo longer than 64 Unicode
-            characters.
+          description: Invalid mode, pseudo, limit, or inGameOnly value.
           schema:
             $ref: '#/definitions/widgets.SteamFriendsBadRequestResponse'
         "401":
-          description: The session_id cookie is missing, expired or invalid.
+          description: Authentication required.
           schema:
             $ref: '#/definitions/widgets.SteamFriendsUnauthorizedResponse'
         "403":
@@ -1543,20 +1622,11 @@ paths:
             is private.
           schema:
             $ref: '#/definitions/widgets.SteamFriendsPrivateResponse'
-        "500":
-          description: The local Steam friends data could not be searched or refreshed.
-          schema:
-            $ref: '#/definitions/widgets.SteamFriendsServerResponse'
         "502":
-          description: Steam is unreachable, timed out, returned an unexpected status,
-            or returned an invalid response.
+          description: Steam is temporarily unavailable.
           schema:
             $ref: '#/definitions/widgets.SteamFriendsBadGatewayResponse'
-        "503":
-          description: The Steam friends service is not configured.
-          schema:
-            $ref: '#/definitions/widgets.SteamFriendsUnavailableResponse'
-      summary: Search a Steam friend's status
+      summary: List or search Steam friends
       tags:
       - Steam
   /auth/{provider}:

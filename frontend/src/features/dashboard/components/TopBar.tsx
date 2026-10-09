@@ -13,9 +13,9 @@ type Props = {
 };
 
 const iconButton =
-  'flex size-10 items-center justify-center rounded-full text-(--text-secondary) transition-colors hover:bg-(--background) hover:text-(--text-primary) focus-visible:ring-2 focus-visible:ring-(--accent)';
+  'flex size-10 items-center justify-center rounded-full text-(--text-on-accent) transition-colors hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-(--text-on-accent)';
 const itemClass =
-  'block w-full rounded-md px-3 py-2 text-left text-sm data-focus:bg-(--background)';
+  'block w-full rounded-md px-3 py-2 text-left text-sm data-focus:bg-(--accent-soft)';
 
 function TopBar({ onAddWidget, onNotify }: Props) {
   const navigate = useNavigate();
@@ -56,7 +56,7 @@ function TopBar({ onAddWidget, onNotify }: Props) {
   };
 
   return (
-    <header className="flex h-16 w-full items-center justify-end gap-2 border-b border-(--border) bg-(--card) px-6">
+    <header className="flex h-16 w-full items-center justify-end gap-2 border-b border-(--border) bg-(--accent) px-6 text-(--text-on-accent)">
       <button type="button" aria-label="Add widget" onClick={onAddWidget} className={iconButton}>
         <Plus size={20} aria-hidden="true" />
       </button>
@@ -110,7 +110,7 @@ function TopBar({ onAddWidget, onNotify }: Props) {
                 type="button"
                 disabled={deleting}
                 onClick={() => setConfirmOpen(false)}
-                className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--background) disabled:opacity-50"
+                className="rounded-md border border-(--border-input) px-4 py-2 text-sm hover:bg-(--accent-soft) disabled:opacity-50"
               >
                 Cancel
               </button>

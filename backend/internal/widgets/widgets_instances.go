@@ -115,6 +115,12 @@ func SeedCatalog(database *gorm.DB) error {
 			AuthType:    "oauth2",
 		},
 		{
+			Name:        "calendar",
+			DisplayName: "Google Calendar",
+			Description: "Google Calendar events",
+			AuthType:    "oauth2",
+		},
+		{
 			Name:        "spotify",
 			DisplayName: "Spotify",
 			Description: "Spotify account and playback data",
@@ -203,22 +209,51 @@ func SeedCatalog(database *gorm.DB) error {
 		return err
 	}
 	steamWidget := models.Widget{}
-	if err := database.Where("service_id = ? AND name = ?", steamService.ID, "friends").FirstOrCreate(&steamWidget, models.Widget{
+	steamWidgetData := models.Widget{
 		ServiceID:   steamService.ID,
 		Name:        "friends",
-		DisplayName: "Steam friend status",
-		Description: "Display the Steam status of a friend searched by pseudo",
-	}).Error; err != nil {
+		DisplayName: "Steam friends",
+		Description: "Display Steam friends online or search the status of a specific friend",
+	}
+	if err := database.Where("service_id = ? AND name = ?", steamService.ID, "friends").First(&steamWidget).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if err := database.Create(&steamWidgetData).Error; err != nil {
+			return err
+		}
+		steamWidget = steamWidgetData
+	}
+	if err := database.Model(&models.Widget{}).
+		Where("id = ?", steamWidget.ID).
+		Updates(map[string]any{"display_name": "Steam friends", "description": "Display Steam friends online or search the status of a specific friend"}).Error; err != nil {
 		return err
 	}
 	if err := database.Where("widget_id = ? AND name = ?", steamWidget.ID, "pseudo").FirstOrCreate(&models.WidgetParam{}, models.WidgetParam{
 		WidgetID:     steamWidget.ID,
 		Name:         "pseudo",
 		Type:         "string",
-		IsRequired:   true,
+		IsRequired:   false,
 		DefaultValue: nil,
 	}).Error; err != nil {
 		return err
+	}
+	if err := database.Model(&models.WidgetParam{}).
+		Where("widget_id = ? AND name = ?", steamWidget.ID, "pseudo").
+		Updates(map[string]any{"is_required": false, "default_value": nil}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct{ name, paramType, defaultValue string }{
+		{name: "mode", paramType: "string", defaultValue: "online"},
+		{name: "limit", paramType: "integer", defaultValue: "5"},
+		{name: "inGameOnly", paramType: "integer", defaultValue: "0"},
+	} {
+		value := paramData.defaultValue
+		if err := database.Where("widget_id = ? AND name = ?", steamWidget.ID, paramData.name).FirstOrCreate(&models.WidgetParam{}, models.WidgetParam{
+			WidgetID: steamWidget.ID, Name: paramData.name, Type: paramData.paramType, IsRequired: false, DefaultValue: &value,
+		}).Error; err != nil {
+			return err
+		}
 	}
 	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
 		allowed := models.WidgetAllowedSize{WidgetID: steamWidget.ID, SizeCode: sizeCode}
@@ -268,6 +303,39 @@ func SeedCatalog(database *gorm.DB) error {
 			if err := database.Where("widget_id = ? AND size_code = ?", widget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
 				return err
 			}
+		}
+	}
+
+	calendarService := models.Service{}
+	if err := database.Where("name = ?", "calendar").First(&calendarService).Error; err != nil {
+		return err
+	}
+	calendarWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", calendarService.ID, "upcoming_events").FirstOrCreate(&calendarWidget, models.Widget{
+		ServiceID:   calendarService.ID,
+		Name:        "upcoming_events",
+		DisplayName: "Upcoming events",
+		Description: "Display upcoming events from the user's primary Google Calendar",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct{ name, paramType string }{
+		{name: "timeMin", paramType: "string"},
+		{name: "timeMax", paramType: "string"},
+		{name: "maxResults", paramType: "integer"},
+		{name: "keyword", paramType: "string"},
+	} {
+		param := models.WidgetParam{}
+		if err := database.Where("widget_id = ? AND name = ?", calendarWidget.ID, paramData.name).FirstOrCreate(&param, models.WidgetParam{
+			WidgetID: calendarWidget.ID, Name: paramData.name, Type: paramData.paramType,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: calendarWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", calendarWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
 		}
 	}
 	return nil

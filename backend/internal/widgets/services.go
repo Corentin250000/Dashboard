@@ -165,7 +165,7 @@ func ListUserServices(c fiber.Ctx) error {
 // @Description Start a third-party connection for Spotify, Google (OAuth 2.0) or Steam (OpenID 2.0 via Goth). GitHub remains reserved for application login. The browser is redirected to the provider; the callback stores encrypted tokens or the Steam account identifier for the current user.
 // @Tags services
 // @Produce json
-// @Param service path string true "Service technical name" Enums(spotify,google,steam)
+// @Param service path string true "Service technical name" Enums(spotify,google,calendar,steam)
 // @Success 302 "Redirect to the selected service OAuth 2.0 or Steam OpenID 2.0 authorization page."
 // @Failure 400 {object} ServiceBadRequestResponse "The selected service has auth_type=none and does not need a connection."
 // @Failure 401 {object} ServiceUnauthorizedResponse "The session_id cookie is missing, expired or invalid."
@@ -210,8 +210,8 @@ func StartOAuth(c fiber.Ctx) error {
 	}
 
 	secure := c.Protocol() == "https"
-	c.Cookie(&fiber.Cookie{Name: serviceOAuthStateCookiePrefix + serviceName, Value: state, HTTPOnly: true, Secure: secure, SameSite: "Lax", Expires: time.Now().Add(serviceOAuthCookieLifetime)})
-	c.Cookie(&fiber.Cookie{Name: serviceOAuthSessionCookiePrefix + serviceName, Value: base64.RawURLEncoding.EncodeToString([]byte(oauthSession.Marshal())), HTTPOnly: true, Secure: secure, SameSite: "Lax", Expires: time.Now().Add(serviceOAuthCookieLifetime)})
+	c.Cookie(&fiber.Cookie{Name: serviceOAuthStateCookiePrefix + serviceName, Value: state, HTTPOnly: true, Secure: secure, SameSite: "Lax", Path: "/", Expires: time.Now().Add(serviceOAuthCookieLifetime)})
+	c.Cookie(&fiber.Cookie{Name: serviceOAuthSessionCookiePrefix + serviceName, Value: base64.RawURLEncoding.EncodeToString([]byte(oauthSession.Marshal())), HTTPOnly: true, Secure: secure, SameSite: "Lax", Path: "/", Expires: time.Now().Add(serviceOAuthCookieLifetime)})
 	return c.Redirect().To(authURL)
 }
 
@@ -221,7 +221,7 @@ func StartOAuth(c fiber.Ctx) error {
 // @Description Complete the Spotify or Google OAuth 2.0 or Steam OpenID 2.0 flow, encrypt the received OAuth tokens (or store the Steam account identifier), upsert the current user's service connection, then redirect to the frontend subscription page.
 // @Tags services
 // @Produce json
-// @Param service path string true "Service technical name" Enums(spotify,google,steam)
+// @Param service path string true "Service technical name" Enums(spotify,google,calendar,steam)
 // @Param state query string false "OAuth state returned by Spotify; Steam OpenID does not return this parameter"
 // @Param code query string false "Authorization code returned by the provider"
 // @Success 302 "Connection stored; redirect to the frontend /subscription page."
@@ -240,16 +240,26 @@ func OAuthCallback(c fiber.Ctx) error {
 		return serviceError(c, fiber.StatusUnauthorized, "Authentication required.")
 	}
 	serviceName := strings.ToLower(strings.TrimSpace(c.Params("service")))
-	service, err := findService(serviceName)
-	if err != nil {
-		return serviceNotFound(c)
-	}
 	provider, err := goth.GetProvider(serviceProviderName(serviceName))
 	if err != nil {
 		return serviceError(c, fiber.StatusNotFound, "OAuth is not configured for this service.")
 	}
 
 	state := c.Cookies(serviceOAuthStateCookiePrefix + serviceName)
+	// Calendar reuses the already registered Google callback URI. Google
+	// returns /google/callback, so detect a Calendar flow from its state cookie
+	// before loading the service and persisting the connection.
+	if serviceName == "google" && (state == "" || state != c.Query("state")) {
+		calendarState := c.Cookies(serviceOAuthStateCookiePrefix + "calendar")
+		if calendarState != "" && calendarState == c.Query("state") {
+			serviceName = "calendar"
+			state = calendarState
+		}
+	}
+	service, err := findService(serviceName)
+	if err != nil {
+		return serviceNotFound(c)
+	}
 	// Steam uses OpenID 2.0 and does not return the OAuth state query
 	// parameter. The authenticated application session and Steam's signed
 	// OpenID response provide the callback binding for that provider.
@@ -379,12 +389,15 @@ func findService(name string) (models.Service, error) {
 }
 
 func serviceProviderName(serviceName string) string {
+	if serviceName == "calendar" {
+		return "service_google"
+	}
 	return "service_" + serviceName
 }
 
 func serviceProviderConfigured(serviceName string) bool {
 	switch serviceName {
-	case "google":
+	case "google", "calendar":
 		return utils.GetEnv("CLIENT_ID_GOOGLE", "") != "" && utils.GetEnv("CLIENT_SECRET_GOOGLE", "") != ""
 	case "spotify":
 		return utils.GetEnv("CLIENT_ID_SPOTIFY", "") != "" && utils.GetEnv("CLIENT_SECRET_SPOTIFY", "") != ""
@@ -487,7 +500,7 @@ func timePointer(value time.Time) *time.Time {
 
 func clearServiceOAuthCookies(c fiber.Ctx, service string) {
 	for _, name := range []string{serviceOAuthStateCookiePrefix + service, serviceOAuthSessionCookiePrefix + service} {
-		c.Cookie(&fiber.Cookie{Name: name, Value: "", HTTPOnly: true, Expires: time.Unix(0, 0), MaxAge: -1})
+		c.Cookie(&fiber.Cookie{Name: name, Value: "", HTTPOnly: true, Path: "/", Expires: time.Unix(0, 0), MaxAge: -1})
 	}
 }
 

@@ -72,13 +72,31 @@ func Registry() []Service {
 			},
 		},
 		{
+			Name: "calendar",
+			Widgets: []Widget{
+				{
+					Name:        "upcoming_events",
+					Description: "Display upcoming events from the user's primary Google Calendar",
+					Params: []Param{
+						{Name: "timeMin", Type: "string"},
+						{Name: "timeMax", Type: "string"},
+						{Name: "maxResults", Type: "integer"},
+						{Name: "keyword", Type: "string"},
+					},
+				},
+			},
+		},
+		{
 			Name: "steam",
 			Widgets: []Widget{
 				{
 					Name:        "friends",
-					Description: "Display the Steam status of a friend searched by pseudo",
+					Description: "Display Steam friends online or search the status of a specific friend",
 					Params: []Param{
+						{Name: "mode", Type: "string"},
 						{Name: "pseudo", Type: "string"},
+						{Name: "limit", Type: "integer"},
+						{Name: "inGameOnly", Type: "integer"},
 					},
 				},
 			},
