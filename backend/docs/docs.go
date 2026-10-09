@@ -821,6 +821,82 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/steam/friends/online": {
+            "get": {
+                "description": "Return fresh online statuses for the authenticated user's Steam friends. A friend is online when Steam reports personastate from 1 to 6; private profiles and profiles appearing offline report personastate 0 and cannot be detected. Results are cached for 60 seconds per Steam account.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Steam"
+                ],
+                "summary": "List Steam friends online",
+                "parameters": [
+                    {
+                        "maximum": 10,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 5,
+                        "example": 5,
+                        "description": "Maximum number of friends to return",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "example": false,
+                        "description": "Only return friends currently playing a game",
+                        "name": "inGameOnly",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Example: {\\\"totalOnline\\\":14,\\\"returned\\\":5,\\\"friends\\\":[{\\\"steamId\\\":\\\"76561198978982665\\\",\\\"pseudo\\\":\\\"chrystoval♛\\\",\\\"status\\\":\\\"En ligne\\\",\\\"currentGame\\\":{\\\"id\\\":\\\"730\\\",\\\"name\\\":\\\"Counter-Strike 2\\\"}}]}",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SteamOnlineFriendsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid limit (must be an integer from 1 to 10) or invalid inGameOnly value.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SteamFriendsBadRequestResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "The session_id cookie is missing, expired or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SteamFriendsUnauthorizedResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "The Steam account is not connected or the Steam friend list is private.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SteamFriendsPrivateResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "The local Steam friends data could not be loaded or updated.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SteamFriendsServerResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SteamFriendsBadGatewayResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "The Steam friends service is not configured.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.SteamFriendsUnavailableResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/steam/friends/status": {
             "post": {
                 "description": "Search the connected user's Steam friends with a normalized pseudo. The local friend list is synchronized after Steam connection and refreshed when its data is older than two minutes. Directional Unicode control characters are removed only for searching; the original Steam pseudo is returned unchanged.",
@@ -2416,6 +2492,45 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "error"
+                }
+            }
+        },
+        "widgets.SteamOnlineFriend": {
+            "type": "object",
+            "properties": {
+                "currentGame": {
+                    "$ref": "#/definitions/widgets.SteamCurrentGame"
+                },
+                "pseudo": {
+                    "type": "string",
+                    "example": "chrystoval♛"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "En ligne"
+                },
+                "steamId": {
+                    "type": "string",
+                    "example": "76561198978982665"
+                }
+            }
+        },
+        "widgets.SteamOnlineFriendsResponse": {
+            "type": "object",
+            "properties": {
+                "friends": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.SteamOnlineFriend"
+                    }
+                },
+                "returned": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "totalOnline": {
+                    "type": "integer",
+                    "example": 14
                 }
             }
         },

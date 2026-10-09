@@ -752,6 +752,33 @@ definitions:
         example: error
         type: string
     type: object
+  widgets.SteamOnlineFriend:
+    properties:
+      currentGame:
+        $ref: '#/definitions/widgets.SteamCurrentGame'
+      pseudo:
+        example: chrystoval♛
+        type: string
+      status:
+        example: En ligne
+        type: string
+      steamId:
+        example: "76561198978982665"
+        type: string
+    type: object
+  widgets.SteamOnlineFriendsResponse:
+    properties:
+      friends:
+        items:
+          $ref: '#/definitions/widgets.SteamOnlineFriend'
+        type: array
+      returned:
+        example: 5
+        type: integer
+      totalOnline:
+        example: 14
+        type: integer
+    type: object
   widgets.TrainStationRequest:
     properties:
       text:
@@ -1505,6 +1532,65 @@ paths:
       summary: Spotify top items
       tags:
       - Spotify widgets
+  /api/steam/friends/online:
+    get:
+      description: Return fresh online statuses for the authenticated user's Steam
+        friends. A friend is online when Steam reports personastate from 1 to 6; private
+        profiles and profiles appearing offline report personastate 0 and cannot be
+        detected. Results are cached for 60 seconds per Steam account.
+      parameters:
+      - default: 5
+        description: Maximum number of friends to return
+        example: 5
+        in: query
+        maximum: 10
+        minimum: 1
+        name: limit
+        type: integer
+      - default: false
+        description: Only return friends currently playing a game
+        example: false
+        in: query
+        name: inGameOnly
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Example: {\"totalOnline\":14,\"returned\":5,\"friends\":[{\"steamId\":\"76561198978982665\",\"pseudo\":\"chrystoval♛\",\"status\":\"En
+            ligne\",\"currentGame\":{\"id\":\"730\",\"name\":\"Counter-Strike 2\"}}]}'
+          schema:
+            $ref: '#/definitions/widgets.SteamOnlineFriendsResponse'
+        "400":
+          description: Invalid limit (must be an integer from 1 to 10) or invalid
+            inGameOnly value.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsBadRequestResponse'
+        "401":
+          description: The session_id cookie is missing, expired or invalid.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsUnauthorizedResponse'
+        "403":
+          description: The Steam account is not connected or the Steam friend list
+            is private.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsPrivateResponse'
+        "500":
+          description: The local Steam friends data could not be loaded or updated.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsServerResponse'
+        "502":
+          description: Steam is unreachable, timed out, returned an unexpected status,
+            or returned an invalid response.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsBadGatewayResponse'
+        "503":
+          description: The Steam friends service is not configured.
+          schema:
+            $ref: '#/definitions/widgets.SteamFriendsUnavailableResponse'
+      summary: List Steam friends online
+      tags:
+      - Steam
   /api/steam/friends/status:
     post:
       consumes:

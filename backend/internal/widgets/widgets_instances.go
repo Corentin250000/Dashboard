@@ -220,6 +220,28 @@ func SeedCatalog(database *gorm.DB) error {
 	}).Error; err != nil {
 		return err
 	}
+	onlineWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", steamService.ID, "friends_online").FirstOrCreate(&onlineWidget, models.Widget{
+		ServiceID: steamService.ID, Name: "friends_online", DisplayName: "Steam friends online", Description: "Display Steam friends currently online",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct{ name, paramType, defaultValue string }{
+		{name: "limit", paramType: "integer", defaultValue: "5"}, {name: "inGameOnly", paramType: "integer", defaultValue: "0"},
+	} {
+		value := paramData.defaultValue
+		if err := database.Where("widget_id = ? AND name = ?", onlineWidget.ID, paramData.name).FirstOrCreate(&models.WidgetParam{}, models.WidgetParam{
+			WidgetID: onlineWidget.ID, Name: paramData.name, Type: paramData.paramType, IsRequired: false, DefaultValue: &value,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: onlineWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", onlineWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
+		}
+	}
 	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
 		allowed := models.WidgetAllowedSize{WidgetID: steamWidget.ID, SizeCode: sizeCode}
 		if err := database.Where("widget_id = ? AND size_code = ?", steamWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {

@@ -81,6 +81,14 @@ func Registry() []Service {
 						{Name: "pseudo", Type: "string"},
 					},
 				},
+				{
+					Name:        "friends_online",
+					Description: "Display Steam friends currently online, optionally limited to friends in a game",
+					Params: []Param{
+						{Name: "limit", Type: "integer"},
+						{Name: "inGameOnly", Type: "integer"},
+					},
+				},
 			},
 		},
 	}

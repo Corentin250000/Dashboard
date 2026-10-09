@@ -3,7 +3,10 @@ package widgets
 import (
 	"context"
 	"errors"
+	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -23,10 +26,28 @@ var steamClient *SteamClient
 // calls sharing the same owner key are coalesced while the refresh is running.
 var steamFriendsSyncGroup singleflight.Group
 var steamFriendsRefreshGroup singleflight.Group
+var steamFriendsSummaryGroup singleflight.Group
+
+type steamSummaryCacheEntry struct {
+	summaries []PlayerSummary
+	expiresAt time.Time
+}
+
+var steamSummaryCache = struct {
+	sync.RWMutex
+	entries map[string]steamSummaryCacheEntry
+}{entries: make(map[string]steamSummaryCacheEntry)}
+
+const steamSummaryCacheDuration = time.Minute
 
 const refreshInterval = 2 * time.Minute
 
-func SetClient(client *SteamClient) { steamClient = client }
+func SetClient(client *SteamClient) {
+	steamClient = client
+	steamSummaryCache.Lock()
+	steamSummaryCache.entries = make(map[string]steamSummaryCacheEntry)
+	steamSummaryCache.Unlock()
+}
 
 // NormalizeName keeps the displayed persona untouched while making searches stable.
 func NormalizeName(value string) string {
@@ -56,7 +77,7 @@ func syncFriends(ctx context.Context, ownerSteamID string) error {
 	if err != nil {
 		return err
 	}
-	summaries, err := steamClient.GetPlayerSummaries(ctx, friendIDs)
+	summaries, err := cachedPlayerSummaries(ctx, ownerSteamID, friendIDs)
 	if err != nil {
 		return err
 	}
@@ -93,6 +114,19 @@ func steamFriendFromSummary(owner string, summary PlayerSummary, syncedAt time.T
 
 type SteamFriendStatusRequest struct {
 	Pseudo string `json:"pseudo" example:"chrystoval"`
+}
+
+type SteamOnlineFriendsResponse struct {
+	TotalOnline int                 `json:"totalOnline" example:"14"`
+	Returned    int                 `json:"returned" example:"5"`
+	Friends     []SteamOnlineFriend `json:"friends"`
+}
+
+type SteamOnlineFriend struct {
+	SteamID     string            `json:"steamId" example:"76561198978982665"`
+	Pseudo      string            `json:"pseudo" example:"chrystoval♛"`
+	Status      string            `json:"status" example:"En ligne"`
+	CurrentGame *SteamCurrentGame `json:"currentGame"`
 }
 type SteamFriendStatusResponse struct {
 	Results []SteamFriendStatus `json:"results"`
@@ -225,6 +259,177 @@ func Status(c fiber.Ctx) error {
 		response.Results = append(response.Results, toStatus(friend))
 	}
 	return c.JSON(response)
+}
+
+// Online returns the authenticated user's friends currently visible as online.
+// Steam reports private or "appears offline" profiles as offline, so they cannot
+// be detected by this endpoint.
+// @Summary List Steam friends online
+// @Description Return fresh online statuses for the authenticated user's Steam friends. A friend is online when Steam reports personastate from 1 to 6; private profiles and profiles appearing offline report personastate 0 and cannot be detected. Results are cached for 60 seconds per Steam account.
+// @Tags Steam
+// @Produce json
+// @Param limit query int false "Maximum number of friends to return" minimum(1) maximum(10) default(5) example(5)
+// @Param inGameOnly query bool false "Only return friends currently playing a game" default(false) example(false)
+// @Success 200 {object} SteamOnlineFriendsResponse "Example: {\"totalOnline\":14,\"returned\":5,\"friends\":[{\"steamId\":\"76561198978982665\",\"pseudo\":\"chrystoval♛\",\"status\":\"En ligne\",\"currentGame\":{\"id\":\"730\",\"name\":\"Counter-Strike 2\"}}]}"
+// @Failure 400 {object} SteamFriendsBadRequestResponse "Invalid limit (must be an integer from 1 to 10) or invalid inGameOnly value."
+// @Failure 401 {object} SteamFriendsUnauthorizedResponse "The session_id cookie is missing, expired or invalid."
+// @Failure 403 {object} SteamFriendsPrivateResponse "The Steam account is not connected or the Steam friend list is private."
+// @Failure 500 {object} SteamFriendsServerResponse "The local Steam friends data could not be loaded or updated."
+// @Failure 502 {object} SteamFriendsBadGatewayResponse "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response."
+// @Failure 503 {object} SteamFriendsUnavailableResponse "The Steam friends service is not configured."
+// @Router /api/steam/friends/online [get]
+func Online(c fiber.Ctx) error {
+	if db == nil || steamClient == nil {
+		return steamError(c, fiber.StatusServiceUnavailable, "Steam friends service is not configured.")
+	}
+	user, ok := auth.CurrentUser(c)
+	if !ok {
+		return steamError(c, fiber.StatusUnauthorized, "Authentication required.")
+	}
+	limit, err := parseOnlineLimit(c.Query("limit"))
+	if err != nil {
+		return steamError(c, fiber.StatusBadRequest, err.Error())
+	}
+	inGameOnly, err := parseOnlineBool(c.Query("inGameOnly"))
+	if err != nil {
+		return steamError(c, fiber.StatusBadRequest, err.Error())
+	}
+	ownerID, err := steamIDForUser(user.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return steamError(c, fiber.StatusForbidden, "A Steam account is not connected.")
+		}
+		return steamError(c, fiber.StatusInternalServerError, "Unable to load the Steam connection.")
+	}
+	var friends []models.SteamFriend
+	if err := db.WithContext(c.Context()).Where("owner_steam_id = ?", ownerID).Find(&friends).Error; err != nil {
+		return steamError(c, fiber.StatusInternalServerError, "Unable to load Steam friends.")
+	}
+	if len(friends) == 0 {
+		if err := SyncFriends(c.Context(), ownerID); err != nil {
+			return steamSyncError(c, err)
+		}
+		if err := db.WithContext(c.Context()).Where("owner_steam_id = ?", ownerID).Find(&friends).Error; err != nil {
+			return steamError(c, fiber.StatusInternalServerError, "Unable to load Steam friends.")
+		}
+	}
+	ids := make([]string, 0, len(friends))
+	for _, friend := range friends {
+		ids = append(ids, friend.FriendSteamID)
+	}
+	summaries, err := cachedPlayerSummaries(c.Context(), ownerID, ids)
+	if err != nil {
+		return steamSyncError(c, err)
+	}
+	if err := persistSummaryUpdates(c.Context(), ownerID, summaries); err != nil {
+		return steamError(c, fiber.StatusInternalServerError, "Unable to update Steam friends.")
+	}
+	byID := make(map[string]models.SteamFriend, len(friends))
+	for _, friend := range friends {
+		byID[friend.FriendSteamID] = friend
+	}
+	for _, summary := range summaries {
+		byID[summary.SteamID] = steamFriendFromSummary(ownerID, summary, time.Now().UTC())
+	}
+	filtered := make([]models.SteamFriend, 0, len(summaries))
+	for _, summary := range summaries {
+		if summary.PersonaState < 1 || summary.PersonaState > 6 || (inGameOnly && summary.GameID == nil) {
+			continue
+		}
+		filtered = append(filtered, byID[summary.SteamID])
+	}
+	sort.SliceStable(filtered, func(i, j int) bool {
+		iInGame, jInGame := filtered[i].CurrentGameID != nil, filtered[j].CurrentGameID != nil
+		if iInGame != jInGame {
+			return iInGame
+		}
+		return NormalizeName(filtered[i].PersonaName) < NormalizeName(filtered[j].PersonaName)
+	})
+	response := SteamOnlineFriendsResponse{TotalOnline: len(filtered), Friends: make([]SteamOnlineFriend, 0, limit)}
+	if limit > len(filtered) {
+		limit = len(filtered)
+	}
+	for _, friend := range filtered[:limit] {
+		response.Friends = append(response.Friends, toOnlineFriend(friend))
+	}
+	response.Returned = len(response.Friends)
+	return c.JSON(response)
+}
+
+func parseOnlineLimit(value string) (int, error) {
+	if value == "" {
+		return 5, nil
+	}
+	limit, err := strconv.Atoi(value)
+	if err != nil || limit < 1 || limit > 10 {
+		return 0, errors.New("limit must be an integer between 1 and 10")
+	}
+	return limit, nil
+}
+
+func parseOnlineBool(value string) (bool, error) {
+	if value == "" {
+		return false, nil
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, errors.New("inGameOnly must be a boolean")
+	}
+	return parsed, nil
+}
+
+func toOnlineFriend(friend models.SteamFriend) SteamOnlineFriend {
+	result := SteamOnlineFriend{SteamID: friend.FriendSteamID, Pseudo: friend.PersonaName, Status: translatedStatus(friend)}
+	if friend.CurrentGameID != nil {
+		result.CurrentGame = &SteamCurrentGame{ID: *friend.CurrentGameID, Name: friend.CurrentGameName}
+	}
+	return result
+}
+
+func cachedPlayerSummaries(ctx context.Context, owner string, ids []string) ([]PlayerSummary, error) {
+	now := time.Now()
+	steamSummaryCache.RLock()
+	entry, found := steamSummaryCache.entries[owner]
+	steamSummaryCache.RUnlock()
+	if found && now.Before(entry.expiresAt) {
+		return entry.summaries, nil
+	}
+	value, err, _ := steamFriendsSummaryGroup.Do(owner, func() (interface{}, error) {
+		steamSummaryCache.RLock()
+		entry, found := steamSummaryCache.entries[owner]
+		steamSummaryCache.RUnlock()
+		if found && time.Now().Before(entry.expiresAt) {
+			return entry.summaries, nil
+		}
+		summaries, err := steamClient.GetPlayerSummaries(ctx, ids)
+		if err != nil {
+			return nil, err
+		}
+		steamSummaryCache.Lock()
+		steamSummaryCache.entries[owner] = steamSummaryCacheEntry{summaries: summaries, expiresAt: time.Now().Add(steamSummaryCacheDuration)}
+		steamSummaryCache.Unlock()
+		return summaries, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return value.([]PlayerSummary), nil
+}
+
+func persistSummaryUpdates(ctx context.Context, owner string, summaries []PlayerSummary) error {
+	now := time.Now().UTC()
+	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, summary := range summaries {
+			row := steamFriendFromSummary(owner, summary, now)
+			if err := tx.Model(&models.SteamFriend{}).
+				Where("owner_steam_id = ? AND friend_steam_id = ?", owner, row.FriendSteamID).
+				Select("persona_name", "search_name", "profile_visibility", "profile_configured", "persona_state", "current_game_id", "current_game_name", "last_logoff_at", "synced_at").
+				Updates(&row).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // refreshFoundOnce coalesces concurrent refreshes for the same Steam account.
