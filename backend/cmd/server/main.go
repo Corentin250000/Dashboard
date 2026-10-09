@@ -135,8 +135,7 @@ func main() {
 
 	// Account.
 	api.Delete("/me/account", auth.DeleteAccount)
-	api.Post("/steam/friends/status", widgets.Status)
-	api.Get("/steam/friends/online", widgets.Online)
+	api.Get("/steam/friends", widgets.Friends)
 
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})

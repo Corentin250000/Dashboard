@@ -815,24 +815,43 @@
                 }
             }
         },
-        "/api/steam/friends/online": {
+        "/api/steam/friends": {
             "get": {
-                "description": "Return fresh online statuses for the authenticated user's Steam friends. A friend is online when Steam reports personastate from 1 to 6; private profiles and profiles appearing offline report personastate 0 and cannot be detected. Results are cached for 60 seconds per Steam account.",
+                "description": "Use mode=online to list connected friends or mode=search to find one friend by pseudo. The online mode accepts limit and inGameOnly; search mode uses the same normalized search as the legacy status endpoint.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Steam"
                 ],
-                "summary": "List Steam friends online",
+                "summary": "List or search Steam friends",
                 "parameters": [
                     {
-                        "maximum": 10,
+                        "enum": [
+                            "online",
+                            "search"
+                        ],
+                        "type": "string",
+                        "default": "online",
+                        "example": "online",
+                        "description": "View to return",
+                        "name": "mode",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "SteamFriend",
+                        "description": "Friend pseudo, required when mode=search",
+                        "name": "pseudo",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
                         "minimum": 1,
                         "type": "integer",
                         "default": 5,
                         "example": 5,
-                        "description": "Maximum number of friends to return",
+                        "description": "Maximum number of online friends",
                         "name": "limit",
                         "in": "query"
                     },
@@ -840,26 +859,26 @@
                         "type": "boolean",
                         "default": false,
                         "example": false,
-                        "description": "Only return friends currently playing a game",
+                        "description": "Only return online friends currently playing a game",
                         "name": "inGameOnly",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Example: {\\\"totalOnline\\\":14,\\\"returned\\\":5,\\\"friends\\\":[{\\\"steamId\\\":\\\"76561198978982665\\\",\\\"pseudo\\\":\\\"chrystoval♛\\\",\\\"status\\\":\\\"En ligne\\\",\\\"currentGame\\\":{\\\"id\\\":\\\"730\\\",\\\"name\\\":\\\"Counter-Strike 2\\\"}}]}",
+                        "description": "Online Steam friends returned successfully.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamOnlineFriendsResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid limit (must be an integer from 1 to 10) or invalid inGameOnly value.",
+                        "description": "Invalid mode, pseudo, limit, or inGameOnly value.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamFriendsBadRequestResponse"
                         }
                     },
                     "401": {
-                        "description": "The session_id cookie is missing, expired or invalid.",
+                        "description": "Authentication required.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamFriendsUnauthorizedResponse"
                         }
@@ -870,92 +889,10 @@
                             "$ref": "#/definitions/widgets.SteamFriendsPrivateResponse"
                         }
                     },
-                    "500": {
-                        "description": "The local Steam friends data could not be loaded or updated.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsServerResponse"
-                        }
-                    },
                     "502": {
-                        "description": "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response.",
+                        "description": "Steam is temporarily unavailable.",
                         "schema": {
                             "$ref": "#/definitions/widgets.SteamFriendsBadGatewayResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "The Steam friends service is not configured.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsUnavailableResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/steam/friends/status": {
-            "post": {
-                "description": "Search the connected user's Steam friends with a normalized pseudo. The local friend list is synchronized after Steam connection and refreshed when its data is older than two minutes. Directional Unicode control characters are removed only for searching; the original Steam pseudo is returned unchanged.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Steam"
-                ],
-                "summary": "Search a Steam friend's status",
-                "parameters": [
-                    {
-                        "description": "Pseudo to search (1 to 64 Unicode characters)",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendStatusRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Matching friends, limited to 10 results. Exact normalized matches are returned first. Example: {\\\"results\\\":[{\\\"steamId\\\":\\\"76561198978982665\\\",\\\"pseudo\\\":\\\"chrystoval\\\\u2067\\\\u2067♛\\\",\\\"profileVisibility\\\":\\\"public\\\",\\\"profileConfigured\\\":true,\\\"status\\\":\\\"En ligne\\\",\\\"currentGame\\\":{\\\"id\\\":\\\"730\\\",\\\"name\\\":\\\"Counter-Strike 2\\\"},\\\"lastLogoff\\\":\\\"2026-10-05T19:51:31Z\\\"}]}",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendStatusResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Malformed JSON, empty pseudo, or pseudo longer than 64 Unicode characters.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsBadRequestResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "The session_id cookie is missing, expired or invalid.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsUnauthorizedResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "The Steam account is not connected or the Steam friend list is private.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsPrivateResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "The local Steam friends data could not be searched or refreshed.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsServerResponse"
-                        }
-                    },
-                    "502": {
-                        "description": "Steam is unreachable, timed out, returned an unexpected status, or returned an invalid response.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsBadGatewayResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "The Steam friends service is not configured.",
-                        "schema": {
-                            "$ref": "#/definitions/widgets.SteamFriendsUnavailableResponse"
                         }
                     }
                 }
@@ -2359,58 +2296,6 @@
                 }
             }
         },
-        "widgets.SteamFriendStatus": {
-            "type": "object",
-            "properties": {
-                "currentGame": {
-                    "$ref": "#/definitions/widgets.SteamCurrentGame"
-                },
-                "lastLogoff": {
-                    "type": "string",
-                    "example": "2026-10-05T19:51:31Z"
-                },
-                "profileConfigured": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "profileVisibility": {
-                    "type": "string",
-                    "example": "public"
-                },
-                "pseudo": {
-                    "type": "string",
-                    "example": "chrystoval⁧⁧♛"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "En ligne"
-                },
-                "steamId": {
-                    "type": "string",
-                    "example": "76561198978982665"
-                }
-            }
-        },
-        "widgets.SteamFriendStatusRequest": {
-            "type": "object",
-            "properties": {
-                "pseudo": {
-                    "type": "string",
-                    "example": "chrystoval"
-                }
-            }
-        },
-        "widgets.SteamFriendStatusResponse": {
-            "type": "object",
-            "properties": {
-                "results": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/widgets.SteamFriendStatus"
-                    }
-                }
-            }
-        },
         "widgets.SteamFriendsBadGatewayResponse": {
             "type": "object",
             "properties": {
@@ -2450,38 +2335,12 @@
                 }
             }
         },
-        "widgets.SteamFriendsServerResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "Unable to search Steam friends."
-                },
-                "status": {
-                    "type": "string",
-                    "example": "error"
-                }
-            }
-        },
         "widgets.SteamFriendsUnauthorizedResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string",
                     "example": "Authentication required."
-                },
-                "status": {
-                    "type": "string",
-                    "example": "error"
-                }
-            }
-        },
-        "widgets.SteamFriendsUnavailableResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "example": "The Steam friends service is not configured."
                 },
                 "status": {
                     "type": "string",
@@ -2497,7 +2356,7 @@
                 },
                 "pseudo": {
                     "type": "string",
-                    "example": "chrystoval♛"
+                    "example": "SteamFriend"
                 },
                 "status": {
                     "type": "string",
