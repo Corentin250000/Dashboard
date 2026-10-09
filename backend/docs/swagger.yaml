@@ -398,6 +398,53 @@ definitions:
         example: Team meeting
         type: string
     type: object
+  widgets.ChessRecordResponse:
+    properties:
+      draws:
+        example: 94
+        type: integer
+      games:
+        example: 1840
+        type: integer
+      losses:
+        example: 831
+        type: integer
+      win_rate:
+        example: 49.73
+        type: number
+      wins:
+        example: 915
+        type: integer
+    type: object
+  widgets.ChessStatsErrorResponse:
+    properties:
+      message:
+        example: The Chess.com player could not be found.
+        type: string
+      status:
+        example: error
+        type: string
+    type: object
+  widgets.ChessStatsResponse:
+    properties:
+      best_rating:
+        example: 1421
+        type: integer
+      rating:
+        example: 1350
+        type: integer
+      record:
+        $ref: '#/definitions/widgets.ChessRecordResponse'
+      time_class:
+        example: rapid
+        type: string
+      updated_at:
+        example: 1791543807
+        type: integer
+      username:
+        example: ChessPlayer42
+        type: string
+    type: object
   widgets.CreateWidgetRequest:
     properties:
       config:
@@ -997,6 +1044,50 @@ paths:
       summary: Google Calendar upcoming events
       tags:
       - Google Calendar widgets
+  /api/chess/stats:
+    get:
+      description: Public route. Return the current and best Chess.com rating, plus
+        the global wins, losses, draws and win rate for rapid, blitz or bullet.
+      parameters:
+      - description: Chess.com username
+        example: ChessPlayer42
+        in: query
+        name: username
+        required: true
+        type: string
+      - description: Chess.com time class
+        enum:
+        - rapid
+        - blitz
+        - bullet
+        example: rapid
+        in: query
+        name: time_class
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Global Chess.com player statistics.
+          schema:
+            $ref: '#/definitions/widgets.ChessStatsResponse'
+        "400":
+          description: A username is missing or time_class is not rapid, blitz or
+            bullet.
+          schema:
+            $ref: '#/definitions/widgets.ChessStatsErrorResponse'
+        "404":
+          description: The Chess.com player does not exist.
+          schema:
+            $ref: '#/definitions/widgets.ChessStatsErrorResponse'
+        "502":
+          description: Chess.com is unavailable or returned an invalid response.
+          schema:
+            $ref: '#/definitions/widgets.ChessStatsErrorResponse'
+      summary: Chess.com player statistics
+      tags:
+      - Chess widgets
   /api/me/account:
     delete:
       description: Permanently delete the authenticated user's account, sessions,

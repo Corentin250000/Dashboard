@@ -116,6 +116,8 @@ func main() {
 	// SNCF data is public and does not require an authenticated session.
 	app.Post("/api/sncf/departures", widgets.GetDepartures)
 	app.Post("/api/sncf/journeys", widgets.GetJourneys)
+	// Chess.com data is public and does not require an authenticated session.
+	app.Get("/api/chess/stats", widgets.GetChessStats)
 
 	api := app.Group("/api", auth.RequireAuth)
 

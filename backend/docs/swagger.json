@@ -131,6 +131,67 @@
                 }
             }
         },
+        "/api/chess/stats": {
+            "get": {
+                "description": "Public route. Return the current and best Chess.com rating, plus the global wins, losses, draws and win rate for rapid, blitz or bullet.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chess widgets"
+                ],
+                "summary": "Chess.com player statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "ChessPlayer42",
+                        "description": "Chess.com username",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "rapid",
+                            "blitz",
+                            "bullet"
+                        ],
+                        "type": "string",
+                        "example": "rapid",
+                        "description": "Chess.com time class",
+                        "name": "time_class",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Global Chess.com player statistics.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessStatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "A username is missing or time_class is not rapid, blitz or bullet.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessStatsErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "The Chess.com player does not exist.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessStatsErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Chess.com is unavailable or returned an invalid response.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessStatsErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/me/account": {
             "delete": {
                 "description": "Permanently delete the authenticated user's account, sessions, service connections, and dashboard widgets. The session cookie is cleared after successful deletion.",
@@ -1994,6 +2055,72 @@
                 "title": {
                     "type": "string",
                     "example": "Team meeting"
+                }
+            }
+        },
+        "widgets.ChessRecordResponse": {
+            "type": "object",
+            "properties": {
+                "draws": {
+                    "type": "integer",
+                    "example": 94
+                },
+                "games": {
+                    "type": "integer",
+                    "example": 1840
+                },
+                "losses": {
+                    "type": "integer",
+                    "example": 831
+                },
+                "win_rate": {
+                    "type": "number",
+                    "example": 49.73
+                },
+                "wins": {
+                    "type": "integer",
+                    "example": 915
+                }
+            }
+        },
+        "widgets.ChessStatsErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "The Chess.com player could not be found."
+                },
+                "status": {
+                    "type": "string",
+                    "example": "error"
+                }
+            }
+        },
+        "widgets.ChessStatsResponse": {
+            "type": "object",
+            "properties": {
+                "best_rating": {
+                    "type": "integer",
+                    "example": 1421
+                },
+                "rating": {
+                    "type": "integer",
+                    "example": 1350
+                },
+                "record": {
+                    "$ref": "#/definitions/widgets.ChessRecordResponse"
+                },
+                "time_class": {
+                    "type": "string",
+                    "example": "rapid"
+                },
+                "updated_at": {
+                    "type": "integer",
+                    "example": 1791543807
+                },
+                "username": {
+                    "type": "string",
+                    "example": "ChessPlayer42"
                 }
             }
         },
