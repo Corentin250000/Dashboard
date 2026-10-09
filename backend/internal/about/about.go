@@ -112,6 +112,15 @@ func Registry() []Service {
 						{Name: "time_class", Type: "string"},
 					},
 				},
+				{
+					Name:        "monthly_stats",
+					Description: "Display a Chess.com player's statistics and games for a month",
+					Params: []Param{
+						{Name: "username", Type: "string"},
+						{Name: "year", Type: "integer"},
+						{Name: "month", Type: "integer"},
+					},
+				},
 			},
 		},
 	}

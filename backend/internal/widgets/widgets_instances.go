@@ -379,6 +379,37 @@ func SeedCatalog(database *gorm.DB) error {
 			return err
 		}
 	}
+	monthlyChessWidget := models.Widget{}
+	if err := database.Where("service_id = ? AND name = ?", chessService.ID, "monthly_stats").FirstOrCreate(&monthlyChessWidget, models.Widget{
+		ServiceID:   chessService.ID,
+		Name:        "monthly_stats",
+		DisplayName: "Chess.com monthly stats",
+		Description: "Display a Chess.com player's statistics and games for a month",
+	}).Error; err != nil {
+		return err
+	}
+	for _, paramData := range []struct {
+		name, paramType string
+	}{
+		{name: "username", paramType: "string"},
+		{name: "year", paramType: "integer"},
+		{name: "month", paramType: "integer"},
+	} {
+		if err := database.Where("widget_id = ? AND name = ?", monthlyChessWidget.ID, paramData.name).FirstOrCreate(&models.WidgetParam{}, models.WidgetParam{
+			WidgetID:   monthlyChessWidget.ID,
+			Name:       paramData.name,
+			Type:       paramData.paramType,
+			IsRequired: true,
+		}).Error; err != nil {
+			return err
+		}
+	}
+	for _, sizeCode := range []string{"small", "wide", "tall", "big"} {
+		allowed := models.WidgetAllowedSize{WidgetID: monthlyChessWidget.ID, SizeCode: sizeCode}
+		if err := database.Where("widget_id = ? AND size_code = ?", monthlyChessWidget.ID, sizeCode).FirstOrCreate(&allowed).Error; err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

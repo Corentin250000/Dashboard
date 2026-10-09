@@ -137,6 +137,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/chess/monthly-stats": {
+            "get": {
+                "description": "Public route. Return a player's monthly global result counts, average accuracy, the three most frequent openings, and essential details for each game.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Chess widgets"
+                ],
+                "summary": "Chess.com monthly statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "ChessPlayer42",
+                        "description": "Chess.com username",
+                        "name": "username",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 2100,
+                        "minimum": 2000,
+                        "type": "integer",
+                        "example": 2026,
+                        "description": "Archive year",
+                        "name": "year",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 12,
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "description": "Archive month",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Monthly Chess.com statistics and games.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessMonthlyStatsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessStatsErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "The Chess.com player does not exist.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessStatsErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Chess.com is unavailable or returned an invalid response.",
+                        "schema": {
+                            "$ref": "#/definitions/widgets.ChessStatsErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/chess/stats": {
             "get": {
                 "description": "Public route. Return the current and best Chess.com rating, plus the global wins, losses, draws and win rate for rapid, blitz or bullet.",
@@ -2061,6 +2129,101 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "Team meeting"
+                }
+            }
+        },
+        "widgets.ChessMonthlyGameDetail": {
+            "type": "object",
+            "properties": {
+                "accuracy": {
+                    "type": "number",
+                    "example": 84.22
+                },
+                "color": {
+                    "type": "string",
+                    "example": "black"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2026-10-09T11:03:27Z"
+                },
+                "result": {
+                    "type": "string",
+                    "example": "win"
+                },
+                "termination": {
+                    "type": "string",
+                    "example": "checkmate"
+                },
+                "time_class": {
+                    "type": "string",
+                    "example": "rapid"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://www.chess.com/game/live/123456789"
+                }
+            }
+        },
+        "widgets.ChessMonthlyStatsResponse": {
+            "type": "object",
+            "properties": {
+                "average_accuracy": {
+                    "type": "number",
+                    "example": 78.42
+                },
+                "draws": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "games": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.ChessMonthlyGameDetail"
+                    }
+                },
+                "losses": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "month": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "openings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/widgets.ChessOpeningStats"
+                    }
+                },
+                "total_games": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "username": {
+                    "type": "string",
+                    "example": "ChessPlayer42"
+                },
+                "wins": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "year": {
+                    "type": "integer",
+                    "example": 2026
+                }
+            }
+        },
+        "widgets.ChessOpeningStats": {
+            "type": "object",
+            "properties": {
+                "games": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Caro-Kann Defense"
                 }
             }
         },
