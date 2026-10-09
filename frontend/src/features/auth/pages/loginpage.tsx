@@ -105,7 +105,7 @@ function LoginPage() {
       <div className="flex gap-3">
         <a
           href={`${API_URL}/auth/google`}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) bg-(--card) px-3 py-2.5 text-sm font-medium text-(--text-primary) transition hover:bg-(--background)"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-(--border-input) bg-(--card) px-3 py-2.5 text-sm font-medium text-(--text-primary) transition hover:bg-(--accent-soft)"
           aria-label="Continue with Google"
         >
           <img src={googleIcon} alt="" className="h-5 w-5" aria-hidden="true" />
@@ -113,7 +113,7 @@ function LoginPage() {
         </a>
         <a
           href={`${API_URL}/auth/github`}
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) bg-(--card) px-3 py-2.5 text-sm font-medium text-(--text-primary) transition hover:bg-(--background)"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-(--border-input) bg-(--card) px-3 py-2.5 text-sm font-medium text-(--text-primary) transition hover:bg-(--accent-soft)"
           aria-label="Continue with GitHub"
         >
           <img src={githubIcon} alt="" className="h-5 w-5" aria-hidden="true" />
@@ -123,7 +123,7 @@ function LoginPage() {
 
       <p className="mt-5 text-center text-sm text-(--text-secondary)">
         Don't have an account?{' '}
-        <Link className="text-(--accent) no-underline hover:underline" to="/register">
+        <Link className="text-(--accent) underline" to="/register">
           Sign up
         </Link>
       </p>

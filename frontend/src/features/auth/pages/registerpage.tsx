@@ -96,7 +96,7 @@ function RegisterPage() {
 
       <p className="mt-5 text-center text-sm text-(--text-secondary)">
         Already have an account?{' '}
-        <Link className="text-(--accent) no-underline hover:underline" to="/login">
+        <Link className="text-(--accent) underline" to="/login">
           Log in
         </Link>
       </p>
