@@ -6,6 +6,8 @@ import SpotifyCurrentlyPlayingWidget from './spotify/SpotifyCurrentlyPlayingWidg
 import SpotifyTopWidget from './spotify/SpotifyTopWidget';
 import GoogleCalendarWidget from './google/GoogleCalendarWidget';
 import SteamFriendsWidget from './steam/SteamFriendsWidget';
+import ChessStatsWidget from './chess/ChessStatsWidget';
+import ChessMonthlyStatsWidget from './chess/ChessMonthlyStatsWidget';
 
 export type WidgetProps = {
   config: Record<string, string>;
@@ -110,6 +112,52 @@ export const WIDGETS: Record<string, WidgetDefinition> = {
     params: [
       { name: 'limit', type: 'integer', label: 'Number of friends (1-100)', defaultValue: '5' },
       { name: 'inGameOnly', type: 'integer', label: 'Only friends in game', defaultValue: '0', field: 'switch' },
+    ],
+  },
+  'chess.stats': {
+    label: 'Chess rating',
+    service: 'chess',
+    requiresAccount: false,
+    component: ChessStatsWidget,
+    allowedSizes: ['wide', 'tall', 'big'],
+    defaultRefreshSeconds: 300,
+    params: [
+      { name: 'username', type: 'string', label: 'Chess.com username' },
+      {
+        name: 'time_class', type: 'string', label: 'Time class', defaultValue: 'rapid', field: 'select',
+        options: [
+          { value: 'rapid', label: 'Rapid' },
+          { value: 'blitz', label: 'Blitz' },
+          { value: 'bullet', label: 'Bullet' },
+        ],
+      },
+    ],
+  },
+  'chess.monthly_stats': {
+    label: 'Chess monthly stats',
+    service: 'chess',
+    requiresAccount: false,
+    component: ChessMonthlyStatsWidget,
+    allowedSizes: ['tall', 'big'],
+    defaultRefreshSeconds: 600,
+    params: [
+      { name: 'username', type: 'string', label: 'Chess.com username' },
+      {
+        name: 'time_class', type: 'string', label: 'Time class', defaultValue: 'rapid', field: 'select',
+        options: [
+          { value: 'rapid', label: 'Rapid' },
+          { value: 'blitz', label: 'Blitz' },
+          { value: 'bullet', label: 'Bullet' },
+        ],
+      },
+      { name: 'year', type: 'integer', label: 'Year', defaultValue: String(new Date().getFullYear()) },
+      {
+        name: 'month', type: 'integer', label: 'Month', defaultValue: String(new Date().getMonth() + 1), field: 'select',
+        options: [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December',
+        ].map((label, index) => ({ value: String(index + 1), label })),
+      },
     ],
   },
 };
