@@ -110,7 +110,7 @@ function TopBar({ onAddWidget, onNotify }: Props) {
                 type="button"
                 disabled={deleting}
                 onClick={() => setConfirmOpen(false)}
-                className="rounded-md border border-(--border) px-4 py-2 text-sm hover:bg-(--accent-soft) disabled:opacity-50"
+                className="rounded-md border border-(--border-input) px-4 py-2 text-sm hover:bg-(--accent-soft) disabled:opacity-50"
               >
                 Cancel
               </button>
