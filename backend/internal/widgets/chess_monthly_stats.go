@@ -1,6 +1,7 @@
 package widgets
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -48,6 +49,9 @@ type ChessMonthlyStatsResponse struct {
 	Username        string                   `json:"username" example:"ChessPlayer42"`
 	Year            int                      `json:"year" example:"2026"`
 	Month           int                      `json:"month" example:"10"`
+	TimeClass       string                   `json:"time_class,omitempty" example:"rapid"`
+	Rating          *int                     `json:"rating,omitempty" example:"1350"`
+	BestRating      *int                     `json:"best_rating,omitempty" example:"1421"`
 	TotalGames      int                      `json:"total_games" example:"12"`
 	Wins            int                      `json:"wins" example:"7"`
 	Losses          int                      `json:"losses" example:"4"`
@@ -76,13 +80,14 @@ type ChessMonthlyGameDetail struct {
 // performance statistics. The route itself is public: the username identifies
 // the public Chess.com profile being queried.
 // @Summary Chess.com monthly statistics
-// @Description Public route. Return a player's monthly global result counts, average accuracy, the three most frequent openings, and essential details for each game.
+// @Description Public route. Return a player's monthly global result counts, average accuracy, the three most frequent openings, and essential details for each game. The API returns every game present in Chess.com's monthly archive response and does not truncate the list.
 // @Tags Chess widgets
 // @Produce json
 // @Param username query string true "Chess.com username" example(ChessPlayer42)
 // @Param year query int true "Archive year" minimum(2000) maximum(2100) example(2026)
 // @Param month query int true "Archive month" minimum(1) maximum(12) example(10)
-// @Success 200 {object} ChessMonthlyStatsResponse "Monthly Chess.com statistics and games."
+// @Param time_class query string false "Optional time class filter" Enums(rapid,blitz,bullet) example(rapid)
+// @Success 200 {object} ChessMonthlyStatsResponse "Monthly Chess.com statistics and games. When time_class is provided, counters, accuracy, openings and games are filtered by that cadence; rating and best_rating are also returned."
 // @Failure 400 {object} ChessStatsErrorResponse "A parameter is missing or invalid."
 // @Failure 404 {object} ChessStatsErrorResponse "The Chess.com player does not exist."
 // @Failure 502 {object} ChessStatsErrorResponse "Chess.com is unavailable or returned an invalid response."
@@ -97,31 +102,65 @@ func GetChessMonthlyStats(c fiber.Ctx) error {
 		return chessStatsError(c, fiber.StatusBadRequest, err.Error())
 	}
 
-	requestURL := fmt.Sprintf(chessMonthlyGamesURL, url.PathEscape(username), year, month)
-	request, err := http.NewRequestWithContext(c.Context(), http.MethodGet, requestURL, nil)
-	if err != nil {
-		return chessStatsError(c, fiber.StatusBadGateway, "Unable to create the Chess.com request.")
+	timeClass := strings.ToLower(strings.TrimSpace(c.Query("time_class")))
+	if timeClass != "" && timeClass != "rapid" && timeClass != "blitz" && timeClass != "bullet" {
+		return chessStatsError(c, fiber.StatusBadRequest, "time_class must be rapid, blitz or bullet.")
 	}
-	request.Header.Set("User-Agent", "dashboard-chess-widget/1.0")
 
-	response, err := (&http.Client{Timeout: 10 * time.Second}).Do(request)
+	games, statusCode, err := fetchChessMonthlyGames(c.Context(), username, year, month)
 	if err != nil {
+		if statusCode == http.StatusNotFound {
+			return chessStatsError(c, fiber.StatusNotFound, "The Chess.com player could not be found.")
+		}
 		return chessStatsError(c, fiber.StatusBadGateway, "Chess.com is temporarily unavailable.")
 	}
-	defer response.Body.Close()
-	if response.StatusCode == http.StatusNotFound {
-		return chessStatsError(c, fiber.StatusNotFound, "The Chess.com player could not be found.")
-	}
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return chessStatsError(c, fiber.StatusBadGateway, "Chess.com returned an invalid response.")
+	if timeClass != "" {
+		filtered := make([]chessGame, 0, len(games))
+		for _, game := range games {
+			if game.TimeClass == timeClass {
+				filtered = append(filtered, game)
+			}
+		}
+		games = filtered
 	}
 
+	response := buildChessMonthlyStats(username, year, month, games)
+	response.TimeClass = timeClass
+	if timeClass != "" {
+		statsPayload, statsStatus, statsErr := fetchChessStats(c.Context(), username)
+		if statsErr != nil {
+			if statsStatus == http.StatusNotFound {
+				return chessStatsError(c, fiber.StatusNotFound, "The Chess.com player could not be found.")
+			}
+			return chessStatsError(c, fiber.StatusBadGateway, "Chess.com is temporarily unavailable.")
+		}
+		stats := selectChessTimeClass(statsPayload, timeClass)
+		response.Rating = intPointer(stats.Last.Rating)
+		response.BestRating = intPointer(stats.Best.Rating)
+	}
+	return c.JSON(response)
+}
+
+func fetchChessMonthlyGames(ctx context.Context, username string, year, month int) ([]chessGame, int, error) {
+	requestURL := fmt.Sprintf(chessMonthlyGamesURL, url.PathEscape(username), year, month)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	request.Header.Set("User-Agent", "dashboard-chess-widget/1.0")
+	response, err := (&http.Client{Timeout: 10 * time.Second}).Do(request)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return nil, response.StatusCode, fmt.Errorf("Chess.com returned HTTP %d", response.StatusCode)
+	}
 	var payload chessMonthlyGamesPayload
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
-		return chessStatsError(c, fiber.StatusBadGateway, "Chess.com returned invalid monthly statistics.")
+		return nil, response.StatusCode, err
 	}
-
-	return c.JSON(buildChessMonthlyStats(username, year, month, payload.Games))
+	return payload.Games, response.StatusCode, nil
 }
 
 func parseChessArchiveDate(rawYear, rawMonth string) (int, int, error) {
@@ -201,6 +240,25 @@ func buildChessMonthlyStats(username string, year, month int, games []chessGame)
 	sort.Slice(response.Games, func(i, j int) bool { return response.Games[i].Date > response.Games[j].Date })
 	return response
 }
+
+func buildChessRecord(username string, games []chessGame, timeClass string) ChessMonthRecordResponse {
+	var record ChessMonthRecordResponse
+	for _, game := range games {
+		if timeClass != "" && game.TimeClass != timeClass {
+			continue
+		}
+		_, player, opponent := chessPlayerSide(game, username)
+		if player == nil || opponent == nil {
+			continue
+		}
+		updateChessRecord(&record.Wins, &record.Losses, &record.Draws, normalizeChessResult(player.Result))
+		record.Games++
+	}
+	record.WinRate = chessWinRate(record.Wins, record.Games)
+	return record
+}
+
+func intPointer(value int) *int { return &value }
 
 func chessPlayerSide(game chessGame, username string) (string, *chessGamePlayer, *chessGamePlayer) {
 	if strings.EqualFold(game.White.Username, username) {

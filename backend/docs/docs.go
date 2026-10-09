@@ -139,7 +139,7 @@ const docTemplate = `{
         },
         "/api/chess/monthly-stats": {
             "get": {
-                "description": "Public route. Return a player's monthly global result counts, average accuracy, the three most frequent openings, and essential details for each game.",
+                "description": "Public route. Return a player's monthly global result counts, average accuracy, the three most frequent openings, and essential details for each game. The API returns every game present in Chess.com's monthly archive response and does not truncate the list.",
                 "produces": [
                     "application/json"
                 ],
@@ -175,11 +175,23 @@ const docTemplate = `{
                         "name": "month",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "rapid",
+                            "blitz",
+                            "bullet"
+                        ],
+                        "type": "string",
+                        "example": "rapid",
+                        "description": "Optional time class filter",
+                        "name": "time_class",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Monthly Chess.com statistics and games.",
+                        "description": "Monthly Chess.com statistics and games. When time_class is provided, counters, accuracy, openings and games are filtered by that cadence; rating and best_rating are also returned.",
                         "schema": {
                             "$ref": "#/definitions/widgets.ChessMonthlyStatsResponse"
                         }
@@ -207,7 +219,7 @@ const docTemplate = `{
         },
         "/api/chess/stats": {
             "get": {
-                "description": "Public route. Return the current and best Chess.com rating, plus the global wins, losses, draws and win rate for rapid, blitz or bullet.",
+                "description": "Public route. Return the current and best Chess.com rating, global results, and the current calendar month's results in UTC for rapid, blitz or bullet.",
                 "produces": [
                     "application/json"
                 ],
@@ -2132,6 +2144,31 @@ const docTemplate = `{
                 }
             }
         },
+        "widgets.ChessMonthRecordResponse": {
+            "type": "object",
+            "properties": {
+                "draws": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "games": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "losses": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "win_rate": {
+                    "type": "number",
+                    "example": 58.33
+                },
+                "wins": {
+                    "type": "integer",
+                    "example": 7
+                }
+            }
+        },
         "widgets.ChessMonthlyGameDetail": {
             "type": "object",
             "properties": {
@@ -2172,6 +2209,10 @@ const docTemplate = `{
                     "type": "number",
                     "example": 78.42
                 },
+                "best_rating": {
+                    "type": "integer",
+                    "example": 1421
+                },
                 "draws": {
                     "type": "integer",
                     "example": 1
@@ -2195,6 +2236,14 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/widgets.ChessOpeningStats"
                     }
+                },
+                "rating": {
+                    "type": "integer",
+                    "example": 1350
+                },
+                "time_class": {
+                    "type": "string",
+                    "example": "rapid"
                 },
                 "total_games": {
                     "type": "integer",
@@ -2271,6 +2320,9 @@ const docTemplate = `{
                 "best_rating": {
                     "type": "integer",
                     "example": 1421
+                },
+                "month_record": {
+                    "$ref": "#/definitions/widgets.ChessMonthRecordResponse"
                 },
                 "rating": {
                     "type": "integer",
