@@ -311,9 +311,17 @@ func OAuthCallback(c fiber.Ctx) error {
 	} else if err != nil {
 		return serviceError(c, fiber.StatusInternalServerError, "Unable to load the service connection.")
 	}
-	connection.OAuthAccessTokenEnc = &accessToken
-	connection.OAuthRefreshTokenEnc = &refreshToken
-	connection.OAuthTokenExpiresAt = timePointer(providerUser.ExpiresAt)
+	// Google may omit the refresh token when the user has already granted
+	// consent. Never replace a usable stored refresh token with an empty one.
+	if accessToken != "" {
+		connection.OAuthAccessTokenEnc = &accessToken
+	}
+	if refreshToken != "" {
+		connection.OAuthRefreshTokenEnc = &refreshToken
+	}
+	if expiresAt := timePointer(providerUser.ExpiresAt); expiresAt != nil {
+		connection.OAuthTokenExpiresAt = expiresAt
+	}
 	if providerUser.UserID != "" {
 		externalID := providerUser.UserID
 		connection.ExternalUsername = &externalID
