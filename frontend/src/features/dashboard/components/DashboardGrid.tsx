@@ -2,7 +2,7 @@ import { useState, type ComponentProps, type ReactNode } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout/legacy';
 import type { LayoutItem } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
-import { useElementHeight } from '../tools/useElementsHeigh';
+import { useElementHeight } from '../tools/useElementsHeight';
 
 const ResponsiveGrid = WidthProvider(Responsive);
 

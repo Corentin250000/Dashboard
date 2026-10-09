@@ -61,6 +61,42 @@ export type SteamFriendsResponse = {
   totalOnline: number;
 };
 
+export type ChessStats = {
+  username: string;
+  time_class: string;
+  rating: number;
+  best_rating: number;
+  record: { wins: number; losses: number; draws: number; games: number; win_rate: number };
+  month_record: { wins: number; losses: number; draws: number; games: number; win_rate: number };
+  updated_at: number;
+};
+
+export type ChessMonthlyGame = {
+  date: string;
+  color: 'white' | 'black';
+  result: string;
+  termination: string;
+  time_class: string;
+  accuracy?: number | null;
+  url: string;
+};
+
+export type ChessMonthlyStats = {
+  username: string;
+  year: number;
+  month: number;
+  rating?: number;
+  best_rating?: number;
+  time_class?: string;
+  total_games: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  average_accuracy?: number | null;
+  openings: { name: string; games: number }[];
+  games: ChessMonthlyGame[];
+};
+
 export type WidgetSize = 'small' | 'wide' | 'tall' | 'big';
 
 export type WidgetInstance = {
@@ -172,5 +208,18 @@ export const api = {
         inGameOnly: String(inGameOnly),
       });
       return request<SteamFriendsResponse>(`/api/steam/friends?${query.toString()}`);
+    },
+    getChessStats: (username: string, timeClass: string) => {
+      const query = new URLSearchParams({ username, time_class: timeClass });
+      return request<ChessStats>(`/api/chess/stats?${query.toString()}`);
+    },
+    getChessMonthlyStats: (username: string, year: number, month: number, timeClass?: string) => {
+      const query = new URLSearchParams({
+        username,
+        year: String(year),
+        month: String(month),
+      });
+      if (timeClass !== undefined) query.set('time_class', timeClass);
+      return request<ChessMonthlyStats>(`/api/chess/monthly-stats?${query.toString()}`);
     },
 };
