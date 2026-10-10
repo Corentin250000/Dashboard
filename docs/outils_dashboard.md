@@ -34,3 +34,32 @@ Backend
 | Firebase (BaaS) | Mise en place ultra-rapide, temps réel intégré | Vendor lock-in, coûts qui grimpent à l'échelle |
 | Supabase (BaaS) | Équivalent open source de Firebase basé sur Postgres | Écosystème plus jeune, moins de fonctionnalités managées |
 
+## Choix retenus pour ce projet
+
+Le projet utilise finalement :
+
+| Besoin | Choix | Justification |
+|---|---|---|
+| Application web | React + TypeScript | Composants réutilisables, typage statique et bonne intégration avec l'interface de dashboard. |
+| Build frontend | Vite | Démarrage rapide, HMR et build de production simple. |
+| Mise en page | `react-grid-layout` | Grille 6x6, tailles fixes, déplacement desktop et gestion responsive. |
+| Style | Tailwind CSS | Tokens de thème centralisés et itération rapide sur l'interface. |
+| API | Go + Fiber | Binaire léger, concurrence native et API HTTP performante. |
+| Accès aux données | PostgreSQL + GORM | Relations, JSONB pour les configurations et intégration Go simple. |
+| Déploiement local | Docker Compose | Démarrage reproductible du backend, de la base et du frontend. |
+| Secrets | Doppler avec repli `.env` | Injection des secrets en environnement Docker tout en conservant un mode local sans compte Doppler. |
+
+Les bibliothèques listées dans les tableaux ci-dessus sont des alternatives
+étudiées, pas nécessairement des dépendances du dépôt. Les dépendances
+effectivement utilisées sont décrites dans `frontend/package.json` et
+`backend/go.mod`.
+
+## Limites actuelles
+
+- Le rafraîchissement des widgets est piloté par le frontend, sans worker
+  backend générique.
+- La grille mobile et tablette est dérivée de la disposition desktop et n'est
+  pas persistée séparément.
+- Les fonctionnalités d'administration ne sont pas implémentées.
+- Les intégrations OAuth dépendent des quotas, scopes et restrictions de chaque
+  fournisseur.

@@ -125,17 +125,19 @@ Values below are fake examples. Never use them as real credentials.
 
 | Name | Type | Purpose | Fake example | Obtain/create |
 |---|---|---|---|---|
-| `CLIENT_ID_GOOGLE` | string | Screenshot-listed Google client ID; currently unused | `google-client-id` | Google Cloud OAuth credentials |
-| `CLIENT_SECRET_GOOGLE` | secret string | Screenshot-listed Google client secret; currently unused | `google-client-secret` | Google Cloud OAuth credentials |
-| `CLIENT_ID_GITHUB` | string | Screenshot-listed GitHub client ID; currently unused | `github-client-id` | GitHub OAuth App |
-| `CLIENT_SECRET_GITHUB` | secret string | Screenshot-listed GitHub client secret; currently unused | `github-client-secret` | GitHub OAuth App |
+| `CLIENT_ID_GOOGLE` | string | Google account login and Google Calendar service OAuth client ID | `google-client-id` | Google Cloud OAuth credentials |
+| `CLIENT_SECRET_GOOGLE` | secret string | Google account login and Google Calendar service OAuth client secret | `google-client-secret` | Google Cloud OAuth credentials |
+| `CLIENT_ID_GITHUB` | string | GitHub account login OAuth client ID | `github-client-id` | GitHub OAuth App |
+| `CLIENT_SECRET_GITHUB` | secret string | GitHub account login OAuth client secret | `github-client-secret` | GitHub OAuth App |
+| `CLIENT_ID_SPOTIFY` | string | Spotify service OAuth client ID | `spotify-client-id` | Spotify Developer Dashboard |
+| `CLIENT_SECRET_SPOTIFY` | secret string | Spotify service OAuth client secret | `spotify-client-secret` | Spotify Developer Dashboard |
 
 ### External APIs
 
 | Name | Type | Purpose | Fake example | Obtain/create |
 |---|---|---|---|---|
 | `API_KEY_SNCF` | secret string | SNCF Navitia Basic Auth username; imports stations and serves SNCF departures | `sncf-token` | SNCF API portal |
-| `API_KEY_STEAM` | secret string | Screenshot-listed Steam key; currently unused | `steam-key` | Steam Web API key page |
+| `API_KEY_STEAM` | secret string | Steam OpenID and Web API key for the Steam service | `steam-key` | Steam Web API key page |
 
 ## 4. Obtain or create provider values
 
@@ -309,8 +311,10 @@ docker-compose up --build
 3. Open `http://127.0.0.1:8081` and register an account.
 4. Confirm the account using the Mailjet email and then log in.
 5. Open the subscription page and request an SNCF departures widget.
-6. Google and GitHub login cannot be checked in this checkout because no
-   corresponding handlers or frontend routes are implemented.
+6. Google and GitHub login require their provider credentials and exact callback
+   URLs. Spotify, Google Calendar, and Steam service connections require their
+   corresponding service credentials. Provider callback URLs are documented in
+   `docs/technical_documentation_backend.md` and must be registered exactly.
 
 ## 8. Troubleshooting
 

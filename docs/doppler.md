@@ -54,16 +54,20 @@ Doppler.
 
 ## Secrets reference
 
-Recreate these names in the Doppler dashboard (`dev` and `prod` configs):
+Recreate these names in the Doppler dashboard:
 
 | Variable | Service | Usage |
 |---|---|---|
 | `DOPPLER_TOKEN` | server, db | Doppler service token (from `.env`, never committed) |
-| `PORT` | server | Backend listen port (`8080`, required by the subject) |
-| `JWT_SECRET` | server | Reserved for future token-based authentication; the current login flow uses an HTTP-only `session_id` cookie |
+| `PORT` | server | Backend listen port |
+| `JWT_SECRET` | server | Used to encrypt/decrypt OAuth tokens |
 | `FRONTEND_URL` | server | Frontend URL (CORS / OAuth redirects) |
-| `API_KEY_SNCF` | server | External API key (injected by `doppler run` even without a Compose entry) |
+| `API_KEY_SNCF` | server | External API key for SNCF widgets |
 | `API_KEY_MAILJET` / `SECRET_KEY_MAILJET` / `MAIL_SENDER_ACCOUNT` | server | Mailjet API credentials for confirmation emails + the sender email address |
+| `CLIENT_ID_GOOGLE` / `CLIENT_SECRET_GOOGLE` | server | Google account login and Google Calendar service OAuth credentials |
+| `CLIENT_ID_GITHUB` / `CLIENT_SECRET_GITHUB` | server | GitHub account login OAuth credentials |
+| `CLIENT_ID_SPOTIFY` / `CLIENT_SECRET_SPOTIFY` | server | Spotify service OAuth credentials |
+| `API_KEY_STEAM` | server | Steam OpenID and Web API credentials |
 | `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | db | Postgres credentials. Must stay in sync with the initialized `pgdata` volume: if you change them, recreate the volume with `docker-compose down -v`, otherwise the database keeps the old credentials silently |
 | `VITE_API_URL` | — | Informational only: the frontend build arg is resolved on the host at build time, so the Doppler value is not picked up by the client build (it uses the Compose default `http://127.0.0.1:8080`) |
 

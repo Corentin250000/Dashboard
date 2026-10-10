@@ -1,12 +1,14 @@
 # Dashboard Backend
 
 The backend is the HTTP API for the Dashboard application. It is a Go 1.25
-service built with Fiber, PostgreSQL, GORM, and a small set of integrations for
-email confirmation and SNCF departure data.
+service built with Fiber, PostgreSQL, GORM, email confirmation, OAuth, and
+multiple external service integrations.
 
-This document describes the backend as it exists today. The database already
-contains models for future service subscriptions and widget instances, but
-their CRUD API and timer worker are not implemented yet.
+This document describes the backend as it exists today. It provides account
+authentication, OAuth service connections, widget-instance CRUD, external
+service integrations, and the public service catalog. Widget refresh timers
+run in the frontend; the backend does not currently run a generic background
+timer worker or persist widget response caches.
 
 ## Responsibilities
 
@@ -17,21 +19,17 @@ The backend currently provides:
 - Local account registration with bcrypt password hashing.
 - Email confirmation and confirmation-token renewal.
 - Login with an HTTP-only `session_id` cookie.
-- A SNCF departure widget backed by the SNCF Navitia API.
+- Persistent sessions with expiry, validation, and logout revocation.
+- OAuth login with Google and GitHub.
+- Service connections for Google Calendar, Spotify, and Steam.
+- Widget-instance CRUD with configuration, size, refresh-rate, and layout validation.
+- SNCF departure and journey widgets backed by the SNCF Navitia API.
+- Spotify, Google Calendar, Steam, and Chess.com widget endpoints.
 - Automatic PostgreSQL connection retries at startup.
 - GORM model migration at startup.
 - Swagger UI and generated OpenAPI files.
 - CORS, request IDs, request logging, panic recovery, and rate limiting for
   confirmation-token renewal.
-
-The following requirements are represented in the data model but are
-not exposed through backend routes yet:
-
-- Service subscription management.
-- OAuth account linking.
-- Widget-instance CRUD operations.
-- Per-widget refresh timers and cached widget data.
-- Administration features.
 
 ## Technology Stack
 
@@ -44,7 +42,7 @@ not exposed through backend routes yet:
 | ORM | GORM | Database access and development migrations |
 | Authentication | bcrypt + secure random tokens | Password hashing and email confirmation |
 | Email | Mailjet | Registration confirmation messages |
-| External data | SNCF Navitia API | Station catalog and train departures |
+| External data | SNCF Navitia, Spotify, Google Calendar, Steam, Chess.com | Widget data and station catalog |
 | API documentation | Swaggo + Fiber Swagger | OpenAPI specification and Swagger UI |
 | Runtime | Docker / Docker Compose | Reproducible local and deployment environment |
 | Secrets | Doppler or environment variables | Runtime configuration |
@@ -55,7 +53,7 @@ not exposed through backend routes yet:
                          +----------------------+
                          | React frontend       |
                          | :8081                |
-                         +----------+-----------+
+                         +----------------------+
                                     |
                                     | HTTP / JSON
                                     v
@@ -64,11 +62,12 @@ not exposed through backend routes yet:
 | db:5432          |       | :8080            |       | confirmation emails  |
 +------------------+       +--------+---------+       +----------------------+
                                      |
-                                     | HTTPS API calls
+                                     | HTTPS API calls / OAuth
                                      v
-                            +----------------------+
-                            | SNCF Navitia API     |
-                            +----------------------+
+                           +------------------------+
+                           | SNCF, Spotify, Google, |
+                           | Steam, Chess.com       |
+                           +------------------------+
 ```
 
 The server starts only after it has connected to PostgreSQL. It then migrates
@@ -168,6 +167,18 @@ value when it is non-empty and otherwise applies the documented fallback.
 | `API_KEY_MAILJET` | Email confirmation only | Mailjet API key. |
 | `SECRET_KEY_MAILJET` | Email confirmation only | Mailjet secret key. |
 | `MAIL_SENDER_ACCOUNT` | Email confirmation only | Validated sender address used by Mailjet. |
+
+### OAuth Variables
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `CLIENT_ID_GOOGLE` | Google login or Calendar | Google OAuth client ID. |
+| `CLIENT_SECRET_GOOGLE` | Google login or Calendar | Google OAuth client secret. |
+| `CLIENT_ID_GITHUB` | GitHub login | GitHub OAuth client ID. |
+| `CLIENT_SECRET_GITHUB` | GitHub login | GitHub OAuth client secret. |
+| `CLIENT_ID_SPOTIFY` | Spotify service | Spotify OAuth client ID. |
+| `CLIENT_SECRET_SPOTIFY` | Spotify service | Spotify OAuth client secret. |
+| `API_KEY_STEAM` | Steam service | Steam Web API key used by Goth/OpenID and friend synchronization. |
 
 The application reads `API_KEY_MAILJET` and `SECRET_KEY_MAILJET`. Keep those
 names aligned with the backend even if an external secret-management setup uses
@@ -385,6 +396,53 @@ Possible responses include:
 - `500` when token generation or persistence fails.
 - `503` when the database is unavailable.
 
+### Authenticated account routes
+
+All routes below require a valid, non-expired `session_id` cookie:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/auth/logout` | Revoke the current session and clear the cookie. |
+| `GET` | `/auth/me` | Return the authenticated user's ID and email. |
+| `DELETE` | `/api/me/account` | Delete the account, sessions, service connections, and widgets. |
+
+### OAuth login routes
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/auth/google` | Start Google account login. |
+| `GET` | `/auth/google/callback` | Complete Google account login. |
+| `GET` | `/auth/github` | Start GitHub account login. |
+| `GET` | `/auth/github/callback` | Complete GitHub account login. |
+
+OAuth login creates or reuses a local account, marks it as confirmed, creates a
+persistent seven-day session, and redirects to `/dashboard`.
+
+### Widget-instance routes
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/me/widgets` | List the current user's widget instances. |
+| `POST` | `/api/me/widgets` | Create a widget instance. |
+| `PATCH` | `/api/me/widgets/:id` | Update size, configuration, refresh rate, or position. |
+| `DELETE` | `/api/me/widgets/:id` | Delete a widget instance. |
+
+Widget creation and updates validate the `service.widget` type, required
+parameters, allowed size, refresh interval, 6x6 desktop bounds, and overlap
+with other widgets. Refresh rates must be between 60 and 21,600 seconds (6 hours).
+
+### Service connection routes
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/me/services` | List services, widgets, and current connection status. |
+| `GET` | `/api/me/services/:service/connect` | Start Google Calendar, Spotify, or Steam connection. |
+| `GET` | `/api/me/services/:service/callback` | Complete a service connection and persist encrypted tokens. |
+| `DELETE` | `/api/me/services/:service/connection` | Remove the connection and that service's widget instances. |
+
+Service OAuth tokens are encrypted by the backend using a key derived from
+`JWT_SECRET`. Provider-side token revocation is not performed generically.
+
 ### `POST /api/sncf/departures`
 
 Returns the next departures for a station known by the local SNCF station
@@ -394,7 +452,7 @@ Request:
 
 ```json
 {
-  "text": "Paris Gare du Nord"
+  "text": "Mulhouse"
 }
 ```
 
@@ -439,6 +497,26 @@ The handler uses a 30-second timeout for the upstream SNCF request and passes
 the incoming request context to it, so cancelled client requests can cancel the
 upstream call.
 
+### Other widget routes
+
+These routes do not require a Dashboard session:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/sncf/journeys` | Search journeys between two SNCF stations. |
+| `GET` | `/api/chess/stats` | Retrieve a Chess.com player's globals statistics. |
+| `GET` | `/api/chess/monthly-stats` | Retrieve monthly Chess.com statistics and games. |
+
+The following routes require a Dashboard session and a connected service where
+applicable:
+
+| Method | Path | Service |
+| --- | --- | --- |
+| `GET` | `/api/spotify/top` | Spotify |
+| `GET` | `/api/spotify/currently-playing` | Spotify |
+| `GET` | `/api/calendar/events` | Google Calendar |
+| `GET` | `/api/steam/friends` | Steam |
+
 ### Swagger UI
 
 Open `http://127.0.0.1:8080/docs/swagger/` after starting the server. The
@@ -463,9 +541,10 @@ The server performs these database steps before serving requests:
 3. Count rows in `sncf_stations`.
 4. Start a background station import when the table is empty.
 
-The SQL files in `../db/migrations` are the reviewed schema source of truth.
-GORM `AutoMigrate` is a development convenience and should not replace
-versioned SQL migrations for production schema changes.
+The SQL files in `../db/migrations` describe the reviewed schema history and
+seed data. In the current application startup path, GORM `AutoMigrate`, widget
+size seeding, and catalog seeding are executed by the server. The SQL files are
+not automatically replayed by a separate migration command.
 
 ### Main tables
 
@@ -478,6 +557,7 @@ versioned SQL migrations for production schema changes.
 | `widget_params` | Widget configuration parameters; only `integer` and `string` are allowed |
 | `widget_instances` | User-configured widget placements, refresh rates, and cached data |
 | `sncf_stations` | SNCF/Navitia station ID and display-name mapping |
+| `steam_friends` | Synchronized Steam friend status and public current-game data |
 
 Sensitive service credentials and OAuth tokens are represented by `*_enc`
 columns in `user_services`. The intended design is application-side encryption
@@ -623,29 +703,13 @@ docker-compose down
   tokens when credentials are missing; this should be removed or replaced with
   a safer operational signal before production use.
 
-### Current authentication limitation
+### Authentication implementation notes
 
-`createSession` currently generates a secure random token but does not persist a
-session record or validate the cookie on protected routes. It is therefore a
-temporary authentication shell, not a complete server-side session system.
-Before exposing authenticated dashboard data, implement a session store with
-expiry, revocation, user lookup, and authentication middleware.
-
-## Subject Compliance
-
-The project subject requires:
-
-- A root `docker-compose.yml`.
-- A server listening on port `8080`.
-- `GET /about.json` with `client.host`, `server.current_time`, and a service
-  catalog.
-- Widget parameters whose types are `integer` or `string`.
-- Configurable widgets rather than parameterless widgets.
-
-The current backend satisfies the HTTP catalog contract with the `sncf`
-service and its configurable `departures` widget. The broader dashboard
-workflow described by the subject still requires service-subscription,
-widget-instance, timer, and authenticated data routes to be completed.
+`session_id` is an opaque UUID stored in the `sessions` table. Protected routes
+load the session, verify its expiry, load the associated user, and reject
+invalid sessions. Logout deletes the database session and clears the cookie.
+Expired session cleanup is currently lazy: an expired row is rejected when it
+is used, but there is no scheduled cleanup worker.
 
 ## Troubleshooting
 
