@@ -87,7 +87,7 @@ func GetCalendarEvents(c fiber.Ctx) error {
 		return calendarError(c, fiber.StatusUnauthorized, googleCalendarReauthMessage)
 	}
 
-	client, err := calendarHTTPClient(user.ID)
+	client, err := calendarHTTPClient(user.ID, false)
 	if err != nil {
 		if errors.Is(err, errCalendarToken) || errors.Is(err, gorm.ErrRecordNotFound) {
 			return calendarError(c, fiber.StatusUnauthorized, googleCalendarReauthMessage)
@@ -108,7 +108,7 @@ func GetCalendarEvents(c fiber.Ctx) error {
 	if keyword != "" {
 		query.Set("q", keyword)
 	}
-	request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://www.googleapis.com/calendar/v3/calendars/primary/events?"+query.Encode(), nil)
+	request, err := calendarRequest(query)
 	if err != nil {
 		log.Printf("Google Calendar request creation failed: %v", err)
 		return calendarError(c, fiber.StatusBadGateway, "Google Calendar is temporarily unavailable.")
@@ -124,7 +124,26 @@ func GetCalendarEvents(c fiber.Ctx) error {
 	defer response.Body.Close()
 
 	if response.StatusCode == http.StatusUnauthorized {
-		return calendarError(c, fiber.StatusUnauthorized, googleCalendarReauthMessage)
+		response.Body.Close()
+		// Google can reject a token before oauth2 considers it expired (for
+		// example after a provider-side invalidation). Force one refresh and
+		// retry before asking the user to reconnect.
+		client, refreshErr := calendarHTTPClient(user.ID, true)
+		if refreshErr != nil {
+			return calendarError(c, fiber.StatusUnauthorized, googleCalendarReauthMessage)
+		}
+		retry, retryErr := calendarRequest(query)
+		if retryErr != nil {
+			return calendarError(c, fiber.StatusBadGateway, "Google Calendar is temporarily unavailable.")
+		}
+		response, err = client.Do(retry)
+		if err != nil {
+			return calendarError(c, fiber.StatusUnauthorized, googleCalendarReauthMessage)
+		}
+		defer response.Body.Close()
+		if response.StatusCode == http.StatusUnauthorized {
+			return calendarError(c, fiber.StatusUnauthorized, googleCalendarReauthMessage)
+		}
 	}
 	if response.StatusCode == http.StatusForbidden {
 		return calendarError(c, fiber.StatusForbidden, "The Google Calendar API or Calendar scope may be missing.")
@@ -184,7 +203,11 @@ func normalizeCalendarEvent(event googleCalendarEvent) CalendarEventDTO {
 	return CalendarEventDTO{ID: event.ID, Title: event.Summary, Start: event.Start.DateTime, End: event.End.DateTime, Location: event.Location}
 }
 
-func calendarHTTPClient(userID uuid.UUID) (*http.Client, error) {
+func calendarRequest(query url.Values) (*http.Request, error) {
+	return http.NewRequestWithContext(context.Background(), http.MethodGet, "https://www.googleapis.com/calendar/v3/calendars/primary/events?"+query.Encode(), nil)
+}
+
+func calendarHTTPClient(userID uuid.UUID, forceRefresh bool) (*http.Client, error) {
 	// New connections use the calendar catalog entry. Fall back to the
 	// historical google entry so existing Google connections keep working.
 	var connection models.UserService
@@ -192,7 +215,7 @@ func calendarHTTPClient(userID uuid.UUID) (*http.Client, error) {
 	if err := db.Where("name = ?", "calendar").First(&service).Error; err == nil {
 		err = db.Where("user_id = ? AND service_id = ?", userID, service.ID).First(&connection).Error
 		if err == nil {
-			return calendarClientFromConnection(connection)
+			return calendarClientFromConnection(connection, forceRefresh)
 		}
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, err
@@ -206,10 +229,10 @@ func calendarHTTPClient(userID uuid.UUID) (*http.Client, error) {
 	if err := db.Where("user_id = ? AND service_id = ?", userID, service.ID).First(&connection).Error; err != nil {
 		return nil, err
 	}
-	return calendarClientFromConnection(connection)
+	return calendarClientFromConnection(connection, forceRefresh)
 }
 
-func calendarClientFromConnection(connection models.UserService) (*http.Client, error) {
+func calendarClientFromConnection(connection models.UserService, forceRefresh bool) (*http.Client, error) {
 	if connection.OAuthAccessTokenEnc == nil {
 		return nil, errCalendarToken
 	}
@@ -228,6 +251,12 @@ func calendarClientFromConnection(connection models.UserService) (*http.Client, 
 	if connection.OAuthTokenExpiresAt != nil {
 		token.Expiry = *connection.OAuthTokenExpiresAt
 	}
+	// x/oauth2 deliberately treats a zero expiry as valid forever. That is
+	// unsafe for stored Google access tokens: force a refresh whenever the
+	// expiry was not persisted, or when a retry was requested after a 401.
+	if calendarTokenNeedsRefresh(token.Expiry, refresh, forceRefresh) {
+		token.Expiry = time.Now().Add(-time.Second)
+	}
 	config := &oauth2.Config{ClientID: utils.GetEnv("CLIENT_ID_GOOGLE", ""), ClientSecret: utils.GetEnv("CLIENT_SECRET_GOOGLE", ""), Endpoint: oauth2.Endpoint{AuthURL: "https://accounts.google.com/o/oauth2/auth", TokenURL: "https://oauth2.googleapis.com/token"}}
 	source := &persistingCalendarTokenSource{base: config.TokenSource(context.Background(), token), connection: connection, access: access, refresh: refresh}
 	if _, err := source.Token(); err != nil {
@@ -237,6 +266,10 @@ func calendarClientFromConnection(connection models.UserService) (*http.Client, 
 		return nil, err
 	}
 	return oauth2.NewClient(context.Background(), source), nil
+}
+
+func calendarTokenNeedsRefresh(expiry time.Time, refreshToken string, forceRefresh bool) bool {
+	return refreshToken != "" && (expiry.IsZero() || forceRefresh)
 }
 
 type persistingCalendarTokenSource struct {
