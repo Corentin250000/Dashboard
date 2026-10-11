@@ -215,6 +215,15 @@ func calendarHTTPClient(userID uuid.UUID, forceRefresh bool) (*http.Client, erro
 	if err := db.Where("name = ?", "calendar").First(&service).Error; err == nil {
 		err = db.Where("user_id = ? AND service_id = ?", userID, service.ID).First(&connection).Error
 		if err == nil {
+			if !hasUsableCalendarRefreshToken(connection) {
+				var googleService models.Service
+				var googleConnection models.UserService
+				if db.Where("name = ?", "google").First(&googleService).Error == nil &&
+					db.Where("user_id = ? AND service_id = ?", userID, googleService.ID).First(&googleConnection).Error == nil &&
+					googleConnection.OAuthRefreshTokenEnc != nil {
+					connection.OAuthRefreshTokenEnc = googleConnection.OAuthRefreshTokenEnc
+				}
+			}
 			return calendarClientFromConnection(connection, forceRefresh)
 		}
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -230,6 +239,14 @@ func calendarHTTPClient(userID uuid.UUID, forceRefresh bool) (*http.Client, erro
 		return nil, err
 	}
 	return calendarClientFromConnection(connection, forceRefresh)
+}
+
+func hasUsableCalendarRefreshToken(connection models.UserService) bool {
+	if connection.OAuthRefreshTokenEnc == nil {
+		return false
+	}
+	refresh, err := decryptServiceToken(*connection.OAuthRefreshTokenEnc)
+	return err == nil && refresh != ""
 }
 
 func calendarClientFromConnection(connection models.UserService, forceRefresh bool) (*http.Client, error) {
@@ -313,7 +330,11 @@ func persistCalendarToken(connection models.UserService, token *oauth2.Token) er
 		connection.OAuthRefreshTokenEnc = &refresh
 	}
 	connection.OAuthTokenExpiresAt = &token.Expiry
-	return db.Save(&connection).Error
+	return db.Model(&models.UserService{}).Where("id = ?", connection.ID).Updates(map[string]any{
+		"o_auth_access_token_enc":  connection.OAuthAccessTokenEnc,
+		"o_auth_refresh_token_enc": connection.OAuthRefreshTokenEnc,
+		"o_auth_token_expires_at":  connection.OAuthTokenExpiresAt,
+	}).Error
 }
 
 func calendarError(c fiber.Ctx, status int, message string) error {
