@@ -59,7 +59,7 @@ tester accounts must be added to the application's Spotify Developer Dashboard.
 The Spotify scopes used by these widgets were added to the OAuth flow, so users
 who connected Spotify before this change must reconnect their account.
 
-## Run and use the app
+## Run the app
 
 For complete environment and installation instructions, see the [setup guide](SETUP.md).
 
@@ -83,6 +83,26 @@ Stop with `Ctrl+C` (or `docker-compose down`). To reset the database as well:
 `.env` and secrets are injected automatically; without one, fill the classic
 variables in `.env` instead. Same launch command either way. Details:
 [`docs/doppler.md`](docs/doppler.md).
+
+### Use the app
+
+1. Open http://127.0.0.1:8081 and create an account with your email and a
+   password (8 characters minimum).
+2. Click the link in the confirmation email, then log in. You can also log in
+   with Google or GitHub.
+3. Open **Services** from the account menu to connect Spotify, Google Calendar
+   or Steam. SNCF and Chess.com are included and need no account.
+4. On the dashboard, click **Add widget**, choose a widget, fill in its
+   settings, pick a size and a refresh rate, then confirm. The widget appears
+   in the first free spot of the grid.
+5. Manage your widgets from their title bar:
+   - drag the title bar to move the widget (on a computer screen);
+   - click the gear icon to change its settings;
+   - click the arrows icon to refresh it now;
+   - click the bin icon to delete it.
+
+You can add the same widget several times with different settings, for
+example two chess ratings for two players.
 
 ### Mailjet email configuration
 
