@@ -37,6 +37,18 @@ The backend validates widget configuration, supported sizes, refresh intervals
 (60 to 21,600 seconds), desktop positions on a 6x6 grid, and overlapping
 widgets.
 
+### Available widgets
+
+| Service | Widgets |
+|---|---|
+| SNCF (no account) | Train departures, Train journeys |
+| Spotify | Currently playing, Top tracks/artists |
+| Google Calendar | Upcoming events |
+| Steam | Friends online |
+| Chess.com (no account) | Rating, Monthly stats |
+
+Parameters and sizes of each widget: see [`docs/technical_documentation_frontend.md`](docs/technical_documentation_frontend.md#widgets).
+
 ### Spotify widgets
 
 `spotify.currently_playing` accepts `show_progress` (`0` or `1`).
