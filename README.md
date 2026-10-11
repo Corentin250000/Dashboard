@@ -1,23 +1,24 @@
 # Dashboard
 
-> **Status: working application.** Authentication, the dashboard grid, OAuth
-> services and widgets are implemented. Remaining work: admin section and
-> final documentation.
+> **Status: working application.** Authentication, persistent sessions, OAuth
+> service connections, widget management and external integrations are
+> implemented. Remaining work includes administration and a generic backend
+> refresh worker.
 
 ## What is this?
 
 Dashboard is a **customizable real-time dashboard**: once registered, a user
-subscribes to services (SNCF, Spotify, Google Calendar, Steam, Chess.com),
-places configured **widgets**, places configured **widgets**
-on a personal page, and each widget refreshes on its own timer — like a
-browser new-tab page turned into a control panel.
+connects services (SNCF, Spotify, Google Calendar, Steam, Chess.com), places
+configured **widgets** on a personal page, and each widget refreshes on its own
+frontend timer — like a browser new-tab page turned into a control panel.
 
 **Typical uses:** morning overview (agenda + train departures), music
 (currently playing, top tracks), gaming (Steam friends, chess ratings).
 
-**Current state:** users can register, connect services and build a dashboard
-with eight widgets across five services (SNCF, Spotify, Google Calendar,
-Steam, Chess.com). See *Features* below.
+**Current state:** users can register, confirm their email, connect supported
+services and build a dashboard with eight widgets across five services (SNCF,
+Spotify, Google Calendar, Steam, Chess.com). Sessions are stored server-side
+and expire after seven days. See *Features* below.
 
 ## Features, services and widgets
 
@@ -26,11 +27,15 @@ Steam, Chess.com). See *Features* below.
 | `GET /about.json` (service/widget catalog) | ✅ Live |
 | `GET /health`, `GET /` | ✅ Live |
 | User registration / login | ✅ Live, email confirmation required |
-| Admin section | 🔲 Planned |
+| Persistent sessions / logout / account deletion | ✅ Live |
 | Services & widgets (SNCF, Spotify, Google Calendar, Steam, Chess.com) | ✅ Live — declared in `backend/internal/about/about.go` (`Registry()`), which feeds `/about.json` |
 | Dashboard grid (add, configure, move, delete widgets) | ✅ Live |
 | Services with OAuth (Spotify, Google, Steam) | ✅ Live |
-| Widgets refresh (automatic timer + manual button) | ✅ Live |
+| Widgets refresh (frontend timer + manual button) | ✅ Live |
+
+The backend validates widget configuration, supported sizes, refresh intervals
+(60 to 21,600 seconds), desktop positions on a 6x6 grid, and overlapping
+widgets.
 
 ### Spotify widgets
 
@@ -74,6 +79,17 @@ Create a Mailjet account, validate one sender email through **Account > Sender a
 key from **Account Settings > API Key Management**. Configure `API_KEY_MAILJET`,
 `SECRET_KEY_MAILJET` and `MAIL_SENDER_ACCOUNT` in Doppler or `.env`.
 
+### OAuth configuration
+
+The available OAuth integrations are:
+
+- Google and GitHub for Dashboard account login;
+- Google Calendar, Spotify and Steam for service connections.
+
+Configure the corresponding `CLIENT_ID_*`, `CLIENT_SECRET_*` and
+`API_KEY_STEAM` variables. Callback URLs must match the provider configuration
+exactly; see [`docs/technical_documentation_backend.md`](docs/technical_documentation_backend.md).
+
 ## Install and build
 
 ```bash
@@ -102,6 +118,9 @@ cd -
 
 The generated files in `backend/docs` are served by the Swagger UI at `/docs/swagger/`.
 
+The complete backend API is also described in
+[`docs/technical_documentation_backend.md`](docs/technical_documentation_backend.md).
+
 Frontend only (Node ≥ 22):
 
 ```bash
@@ -113,7 +132,7 @@ cd frontend && npm ci && npm run dev   # dev server with HMR
 | Part | Technology | Notes |
 |---|---|---|
 | Backend | **Go + Fiber** | Graceful shutdown, Swagger UI, CORS for local development |
-| Frontend | **React 19 + Vite + TypeScript + Tailwind v4** | Grid with react-grid-layout; details in [`technical_documentation_frontend.md`](docs/technical_documentation_frontend.md) |
+| Frontend | **React 19 + Vite 8 + TypeScript 6 + Tailwind v4** | Grid with react-grid-layout; details in [`technical_documentation_frontend.md`](docs/technical_documentation_frontend.md) |
 | Database | **PostgreSQL 16** | Reachable only inside the Compose network (`db:5432`) |
 | Secrets | **Doppler** | `doppler run` wrappers; see [`docs/doppler.md`](docs/doppler.md) |
 | Build/run | **Docker Compose** | Single entrypoint: `docker-compose up` |
@@ -129,7 +148,7 @@ repo/
 ├── db/                    Postgres image + Doppler wrapper entrypoint
 ├── docker-compose.yml     services: server (:8080), db (internal), client (:8081)
 ├── .env.example           all variables, Doppler (Method A) and classic (Method B)
-└── docs/                  doppler.md (secrets), technical_documentation_frontend.md  technical_documentation_backend.md
+└── docs/                  backend, database, secrets, frontend and tooling documentation
 ```
 
 ### Key flows (the two parts worth understanding)
@@ -148,8 +167,22 @@ docker-compose up
 ```
 GET /about.json → backend/internal/about/about.go :: Registry()
                      (add future services/widgets here; each widget needs ≥1 param
-                      of type "string" or "integer")
+                       of type "string" or "integer")
 ```
+
+**Backend initialization:**
+
+```
+server starts
+  ├─ connect to PostgreSQL (up to 10 retries)
+  ├─ run GORM AutoMigrate
+  ├─ seed widget sizes and the service/widget catalog
+  └─ import SNCF stations in the background when the catalog is empty
+```
+
+The SQL files in `db/migrations/` document the reviewed schema history, while
+the current startup path uses GORM and backend seed functions rather than a
+separate migration runner. See [`docs/database-schema.md`](docs/database-schema.md).
 
 ## Contributing
 
