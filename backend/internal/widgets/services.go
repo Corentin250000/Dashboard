@@ -311,8 +311,10 @@ func OAuthCallback(c fiber.Ctx) error {
 	} else if err != nil {
 		return serviceError(c, fiber.StatusInternalServerError, "Unable to load the service connection.")
 	}
-	// Google may omit the refresh token when the user has already granted
-	// consent. Never replace a usable stored refresh token with an empty one.
+	if (serviceName == "google" || serviceName == "calendar") &&
+		providerUser.RefreshToken == "" && !hasUsableCalendarRefreshToken(connection) {
+		return serviceError(c, fiber.StatusBadGateway, "Google did not provide a refresh token. Revoke the Dashboard access in Google and reconnect.")
+	}
 	if accessToken != "" {
 		connection.OAuthAccessTokenEnc = &accessToken
 	}
@@ -329,6 +331,12 @@ func OAuthCallback(c fiber.Ctx) error {
 	if err := db.Save(&connection).Error; err != nil {
 		return serviceError(c, fiber.StatusInternalServerError, "Unable to persist the service connection.")
 	}
+	if serviceName == "google" || serviceName == "calendar" {
+		if err := synchronizeGoogleCalendarConnection(user.ID, serviceName, connection); err != nil {
+			log.Printf("Google Calendar connection synchronization failed: %v", err)
+			return serviceError(c, fiber.StatusInternalServerError, "Unable to persist the service connection.")
+		}
+	}
 	if serviceName == "spotify" {
 		invalidateSpotifySession(user.ID)
 	}
@@ -341,6 +349,35 @@ func OAuthCallback(c fiber.Ctx) error {
 	}
 	clearServiceOAuthCookies(c, serviceName)
 	return c.Redirect().To(frontendURL("/subscription"))
+}
+
+// synchronizeGoogleCalendarConnection keeps the historical google catalog
+// row and the calendar catalog row aligned. Both names have existed in the
+// database, while the widget reads calendar first and falls back to google.
+func synchronizeGoogleCalendarConnection(userID uuid.UUID, serviceName string, connection models.UserService) error {
+	otherName := "google"
+	if serviceName == "google" {
+		otherName = "calendar"
+	}
+	var otherService models.Service
+	if err := db.Where("name = ?", otherName).First(&otherService).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+	var other models.UserService
+	err := db.Where("user_id = ? AND service_id = ?", userID, otherService.ID).First(&other).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		other = models.UserService{UserID: userID, ServiceID: otherService.ID}
+	} else if err != nil {
+		return err
+	}
+	other.OAuthAccessTokenEnc = connection.OAuthAccessTokenEnc
+	other.OAuthRefreshTokenEnc = connection.OAuthRefreshTokenEnc
+	other.OAuthTokenExpiresAt = connection.OAuthTokenExpiresAt
+	other.ExternalUsername = connection.ExternalUsername
+	return db.Save(&other).Error
 }
 
 // Disconnect removes the local service connection, encrypted tokens and

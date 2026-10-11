@@ -47,6 +47,7 @@ func ConfigureOAuth() {
 		"https://www.googleapis.com/auth/calendar.events.readonly",
 	)
 	serviceGoogleProvider.SetAccessType("offline")
+	serviceGoogleProvider.SetPrompt("consent")
 	serviceGoogleProvider.SetName("service_google")
 	githubProvider := github.New(
 		utils.GetEnv("CLIENT_ID_GITHUB", ""),
