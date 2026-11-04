@@ -104,6 +104,7 @@ Values below are fake examples. Never use them as real credentials.
 |---|---|---|---|---|
 | `PORT` | integer | API listen port | `8080` | Choose `8080` locally |
 | `FRONTEND_URL` | URL | CORS origin and email confirmation-link base | `http://127.0.0.1:8081` | Use the actual frontend origin |
+| `BACKEND_URL` | URL | Public backend base URL used for OAuth callbacks | `http://127.0.0.1:8080` | Use the actual browser-reachable API URL |
 | `VITE_API_URL` | URL | API base URL embedded by Vite | `http://127.0.0.1:8080` | Use the actual browser-reachable API URL |
 
 ### Security
@@ -303,6 +304,45 @@ Doppler configuration, and build/run Compose:
 ```bash
 docker-compose up --build
 ```
+
+## Déploiement derrière Tailscale
+
+Configure les URL publiques avec le nom MagicDNS de la machine et celui du
+tailnet. Par exemple :
+
+```dotenv
+FRONTEND_URL=https://machine.tailnet.ts.net
+BACKEND_URL=https://machine.tailnet.ts.net:8443
+VITE_API_URL=https://machine.tailnet.ts.net:8443
+```
+
+`VITE_API_URL` est une variable de build intégrée au frontend. Après toute
+modification des URL, reconstruis et démarre les conteneurs avec
+`docker compose up -d --build`.
+
+Sur le serveur, configure les deux proxys HTTPS Tailscale vers les ports locaux
+du projet :
+
+```bash
+sudo tailscale serve --bg --https=443 http://127.0.0.1:8081
+sudo tailscale serve --bg --https=8443 http://127.0.0.1:8080
+```
+
+Enregistre les URI de redirection suivantes chez les fournisseurs OAuth, en
+remplaçant `BACKEND_URL` par sa valeur configurée :
+
+- Google : `${BACKEND_URL}/auth/google/callback` et
+  `${BACKEND_URL}/api/me/services/google/callback`
+- GitHub : `${BACKEND_URL}/auth/github/callback`
+- Spotify : `${BACKEND_URL}/api/me/services/spotify/callback`
+- Steam : aucune URI à enregistrer.
+
+Avec Doppler, utilise une configuration/branche dédiée au serveur pour
+surcharger `FRONTEND_URL`, `BACKEND_URL` et `VITE_API_URL`, sans modifier la
+configuration partagée. Comme `VITE_API_URL` est lu au moment du build, rends
+cette valeur disponible dans l'environnement de `docker compose up -d --build`
+(par exemple dans le `.env` local au serveur) ; une valeur injectée uniquement
+au démarrage du conteneur backend ne peut pas modifier le frontend déjà compilé.
 
 ## 7. Verification checklist
 
