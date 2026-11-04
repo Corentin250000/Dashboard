@@ -136,7 +136,7 @@ func OAuthStart(c fiber.Ctx) error {
 		})
 	}
 
-	secure := c.Protocol() == "https"
+	secure := c.Scheme() == "https"
 	c.Cookie(&fiber.Cookie{
 		Name:     oauthStateCookiePrefix + providerName,
 		Value:    state,
@@ -254,7 +254,7 @@ func setSessionCookie(c fiber.Ctx, userID uuid.UUID) error {
 		Name:     sessionCookieName,
 		Value:    sessionID,
 		HTTPOnly: true,
-		Secure:   c.Protocol() == "https",
+		Secure:   c.Scheme() == "https",
 		SameSite: "Lax",
 		Path:     "/",
 		Expires:  time.Now().Add(sessionLifetime),

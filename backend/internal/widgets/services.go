@@ -209,7 +209,7 @@ func StartOAuth(c fiber.Ctx) error {
 		return serviceError(c, fiber.StatusInternalServerError, "Unable to build the OAuth provider URL.")
 	}
 
-	secure := c.Protocol() == "https"
+	secure := c.Scheme() == "https"
 	c.Cookie(&fiber.Cookie{Name: serviceOAuthStateCookiePrefix + serviceName, Value: state, HTTPOnly: true, Secure: secure, SameSite: "Lax", Path: "/", Expires: time.Now().Add(serviceOAuthCookieLifetime)})
 	c.Cookie(&fiber.Cookie{Name: serviceOAuthSessionCookiePrefix + serviceName, Value: base64.RawURLEncoding.EncodeToString([]byte(oauthSession.Marshal())), HTTPOnly: true, Secure: secure, SameSite: "Lax", Path: "/", Expires: time.Now().Add(serviceOAuthCookieLifetime)})
 	return c.Redirect().To(authURL)
