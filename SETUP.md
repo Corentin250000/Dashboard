@@ -104,6 +104,7 @@ Values below are fake examples. Never use them as real credentials.
 |---|---|---|---|---|
 | `PORT` | integer | API listen port | `8080` | Choose `8080` locally |
 | `FRONTEND_URL` | URL | CORS origin and email confirmation-link base | `http://127.0.0.1:8081` | Use the actual frontend origin |
+| `BACKEND_URL` | URL | Public backend base URL used for OAuth callbacks | `http://127.0.0.1:8080` | Use the actual browser-reachable API URL |
 | `VITE_API_URL` | URL | API base URL embedded by Vite | `http://127.0.0.1:8080` | Use the actual browser-reachable API URL |
 
 ### Security

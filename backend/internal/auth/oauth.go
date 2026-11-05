@@ -31,7 +31,7 @@ func ConfigureOAuth() {
 	googleProvider := google.New(
 		utils.GetEnv("CLIENT_ID_GOOGLE", ""),
 		utils.GetEnv("CLIENT_SECRET_GOOGLE", ""),
-		"http://127.0.0.1:8080/auth/google/callback",
+		backendURL("/auth/google/callback"),
 		"openid",
 		"profile",
 		"email",
@@ -39,7 +39,7 @@ func ConfigureOAuth() {
 	serviceGoogleProvider := google.New(
 		utils.GetEnv("CLIENT_ID_GOOGLE", ""),
 		utils.GetEnv("CLIENT_SECRET_GOOGLE", ""),
-		"http://127.0.0.1:8080/api/me/services/google/callback",
+		backendURL("/api/me/services/google/callback"),
 		"openid",
 		"profile",
 		"email",
@@ -52,13 +52,13 @@ func ConfigureOAuth() {
 	githubProvider := github.New(
 		utils.GetEnv("CLIENT_ID_GITHUB", ""),
 		utils.GetEnv("CLIENT_SECRET_GITHUB", ""),
-		"http://127.0.0.1:8080/auth/github/callback",
+		backendURL("/auth/github/callback"),
 		"user:email",
 	)
 	serviceSpotifyProvider := spotify.New(
 		utils.GetEnv("CLIENT_ID_SPOTIFY", ""),
 		utils.GetEnv("CLIENT_SECRET_SPOTIFY", ""),
-		"http://127.0.0.1:8080/api/me/services/spotify/callback",
+		backendURL("/api/me/services/spotify/callback"),
 		spotify.ScopeUserReadPrivate,
 		spotify.ScopeUserReadEmail,
 		"user-read-currently-playing",
@@ -67,7 +67,7 @@ func ConfigureOAuth() {
 	serviceSpotifyProvider.SetName("service_spotify")
 	serviceSteamProvider := steam.New(
 		utils.GetEnv("API_KEY_STEAM", ""),
-		"http://127.0.0.1:8080/api/me/services/steam/callback",
+		backendURL("/api/me/services/steam/callback"),
 	)
 	serviceSteamProvider.SetName("service_steam")
 
@@ -78,6 +78,11 @@ func ConfigureOAuth() {
 		serviceSpotifyProvider,
 		serviceSteamProvider,
 	)
+}
+
+func backendURL(path string) string {
+	baseURL := strings.TrimSuffix(utils.GetEnv("BACKEND_URL", "http://127.0.0.1:8080"), "/")
+	return baseURL + path
 }
 
 // OAuthStart redirects the browser to the selected provider.
@@ -131,7 +136,7 @@ func OAuthStart(c fiber.Ctx) error {
 		})
 	}
 
-	secure := c.Protocol() == "https"
+	secure := c.Scheme() == "https"
 	c.Cookie(&fiber.Cookie{
 		Name:     oauthStateCookiePrefix + providerName,
 		Value:    state,
@@ -249,7 +254,7 @@ func setSessionCookie(c fiber.Ctx, userID uuid.UUID) error {
 		Name:     sessionCookieName,
 		Value:    sessionID,
 		HTTPOnly: true,
-		Secure:   c.Protocol() == "https",
+		Secure:   c.Scheme() == "https",
 		SameSite: "Lax",
 		Path:     "/",
 		Expires:  time.Now().Add(sessionLifetime),

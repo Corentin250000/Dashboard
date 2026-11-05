@@ -77,6 +77,12 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
+		// Trust the local reverse proxy, including its private Docker bridge IP.
+		TrustProxy: true,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Loopback: true,
+			Private:  true,
+		},
 	})
 
 	app.Use(requestid.New())
